@@ -1,0 +1,20 @@
+
+doesn't handle two s-expression on a one line correctly
+;;; type "quit" to quit
+;;; C-eval input: (foo) (bar)
+
+;;; C-eval value:
+foo
+  bar
+2
+;;; C-eval input:
+
+no special handling of strings -- essentially treated as symbols
+
+quoted shouldn't take more than one arg
+
+definitions of the form (define (foo ...)) not handled
+
+something wrong with (define foo (quote bar baz))
+
+the global environment needs to contain bindings for primitive procedures
