@@ -8,4 +8,6 @@ int replace_all(char *s, char old, char new);
 int replace_first(char *s, char old, char new);
 
 int all_digits(char *s);
+
+void remove_newline(char *s);
 #endif

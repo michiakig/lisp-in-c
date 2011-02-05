@@ -18,3 +18,5 @@ definitions of the form (define (foo ...)) not handled
 something wrong with (define foo (quote bar baz))
 
 the global environment needs to contain bindings for primitive procedures
+
+primitive-add should calculate the number of digits 

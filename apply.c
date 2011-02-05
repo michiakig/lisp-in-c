@@ -29,30 +29,28 @@
 //  printf("\n");
 //}
 
-DATA *primitive_add(LLIST *argl) {
+LIST *primitive_add(LIST *argl) {
   double sum=0;
-  DATA *arg;
   char *s;
-  for(LLIST *n=argl; n != NULL; n = n->next) {
-    arg = (DATA*)n->data;
-    if(arg != NULL && arg->type == ATOM) {
+  for(LIST *n=argl; n != NULL; n = n->next) {
+    if(n->data != NULL && arg->type == ATOM) {
       s = (char*)arg->data;
       sum += atoi(s);
     }
   }
-  s = malloc(sizeof(char)*100); // TODO fix this 
+  s = malloc(sizeof(char)*100); // TODO calculate the num digits
   sprintf(s, "%f", sum);
 
-  DATA *d = malloc(sizeof(DATA));
+  LIST *d = malloc(sizeof(LIST));
   d->type = ATOM;
   d->data = s;
   return d;
 }
 
-DATA *apply(PROCEDURE *proc, LLIST *argl) {
+LIST *apply(PROCEDURE *proc, LLIST *argl) {
   if(proc->fun != NULL) { // primitive procedure
     return (*(proc->fun))(argl);
   } else {
-
+    //
   }
 }

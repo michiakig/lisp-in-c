@@ -7,13 +7,13 @@
 
 typedef struct procedure {
   //  enum datatype type;
-  LLIST *params;
-  LLIST *body;
-  LLIST *env;
-  DATA* (*fun) (LLIST *argl);
+  LIST *params;
+  LIST *body;
+  LIST *env;
+  LIST* (*fun) (LIST *argl);
 } PROCEDURE;
 
-DATA *primitive_add(LLIST *argl);
-DATA *apply(PROCEDURE *proc, LLIST *argl);
+LIST *primitive_add(LIST *argl);
+LIST *apply(PROCEDURE *proc, LIST *argl);
 
 #endif

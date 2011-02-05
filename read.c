@@ -2,29 +2,31 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "llist.h"
+#include "list.h"
 #include "str_utils.h"
+
 #include "read.h"
-#include "eval.h"
 
 #define MAX_LEN 100
 
-/* parse an s-expression into a linked-list (actually a tree) */
-DATA *parse_sexp(LLIST *lines) { // lines is the output of read_sexp
+/* Parses an s-expression into a linked-list (actually a tree) */
+LIST *parse_sexp(LIST *lines) { // lines is the output of read_sexp
   char *buf;
   char *brk;
   int len;
 
-  LLIST *stack = NULL; // stack of unfinished lists
+  LIST *stack = NULL; // stack of unfinished lists
 
-  LLIST *head = NULL; // head of the current list
-  LLIST *last = NULL; // last of the current list
+  LIST *head = NULL; // head of the current list
+  LIST *hcontainer;
+  LIST *last = NULL; // last of the current list
+  LIST *lcontainer;
 
-  LLIST *line = lines; // current line
-  LLIST *old_head;
-  LLIST *old_last;
+  LIST *line = lines; // current line
+  LIST *old_head;
+  LIST *old_last;
 
-  DATA *ret = NULL;
+  LIST *ret = NULL;
 
   char *ch = (char*)line->data; // current char
   while(ch != NULL) {
@@ -32,42 +34,57 @@ DATA *parse_sexp(LLIST *lines) { // lines is the output of read_sexp
     if(*ch=='(') { // start up a new list
       ch++;
       if(ret == NULL) {
-        ret = malloc(sizeof(DATA));
-        ret->type = LIST;
+        ret = malloc(sizeof(LIST));
+        ret->type = CONS;
       }
       if(last != NULL) {
-        push(&stack, last, 0);
-        push(&stack, head, 0);
+        lcontainer = malloc(sizeof(LIST));
+        lcontainer->data = last;
+        lcontainer->next = NULL;
+        lcontainer->type = CONS;
+
+        hcontainer = malloc(sizeof(LIST));
+        hcontainer->data = head;
+        hcontainer->next = NULL;
+        hcontainer->type = CONS;
+
+        push(&stack, lcontainer);
+        push(&stack, hcontainer);
       }
       last = NULL;
       head = last;
     } else if(*ch==')') { // finish the current list 
       ch++;
       if(stack != NULL) {
-        old_head = pop(&stack);
-        old_last = pop(&stack);
-        last = list_append(old_last, head, 0); // append to the outer list
-        head = old_head;
+        hcontainer = pop(&stack);
+        lcontainer = pop(&stack);
+        LIST *n = malloc(sizeof(LIST));
+        n->type = CONS;
+        n->data = head;
+        n->next = NULL;
+        last = append(lcontainer->data, n); // append to the outer list
+        head = hcontainer->data;
       }
       if(head == NULL) {
-        head = malloc(sizeof(LLIST));
-        head->primitive = 1;
+        head = malloc(sizeof(LIST));
+        head->type = ATOM;
         head->data = NULL;
         last = head;
         ret->data = head;
+        ret->type = CONS;
+        ret->next = NULL;
       }
     } else if(*ch==' ' || *ch=='\t') {
       ch++; // skip over whitespace
     } else if(*ch=='\n') {
       line = line->next;
       if(line != NULL)
-        ch=line->data;
+        ch=((LIST*)line->data)->data;
       else
         ch=NULL;
     } else {
       brk = strpbrk(ch, "() \n\t");
       if(brk != NULL) {
-
         len = brk - ch;
         buf = (char*)malloc(sizeof(char)*len+1);
         int i=0;
@@ -76,24 +93,29 @@ DATA *parse_sexp(LLIST *lines) { // lines is the output of read_sexp
         buf[i]='\0';
 
         if(last == NULL) { // this is the first element of the list
-          if(ret == NULL) {
-            ret = malloc(sizeof(DATA));
+          if(ret == NULL) { // only item, haven't seen an open paren
+            ret = malloc(sizeof(LIST));
             ret->type = ATOM;
             ret->data = buf;
+            ret->next = NULL;
             return ret;
           } else { // not the first element in the list
-            last = (LLIST*)malloc(sizeof(LLIST));
+            last = (LIST*)malloc(sizeof(LIST));
             last->data = buf;
-            last->primitive = 1;
+            last->type = ATOM;
             last->next = NULL;
             head = last;
             if(ret->data == NULL) { // ret hasn't been initialized by an outer list
               ret->data = head;
-              ret->type = LIST;
+              ret->type = CONS;
             }
           }
         } else { // adding an new item to the list
-          last = list_append(last, buf, 1);
+          LIST *n = malloc(sizeof(LIST));
+          n->next = NULL;
+          n->type = ATOM;
+          n->data = buf;
+          last = append(last, n);
         }
         ch = brk;
       } else {
@@ -101,40 +123,43 @@ DATA *parse_sexp(LLIST *lines) { // lines is the output of read_sexp
       }
     }
   }
-  
   return ret;
 }
 
 /* read an s-expression from a file, buffer lines in a linked-list */
-LLIST *read_sexp(FILE *f) {
+LIST *read_sexp(FILE *f) {
   char *buf = (char*)malloc(sizeof(char)*(MAX_LEN+1));
-  LLIST *head = NULL;
-  LLIST *last = NULL;
+  LIST *head = NULL;
+  LIST *last = NULL;
+  LIST *n;
   int count=0;
 
   while(fgets(buf, MAX_LEN+1, f) != NULL &&
         (count+=count_parens(buf, MAX_LEN+1)) > 0) {
+
+    n = malloc(sizeof(LIST));
+    n->data = buf;
+    n->type = ATOM;
+    n->next = NULL;
     if(head == NULL) {
-      head = (LLIST*)malloc(sizeof(LLIST));
+      head = n;
       last = head;
-      head->data = buf;
-      head->primitive = 1;
-      head->next = NULL;
     } else {
-      last = list_append(last, buf, 1);
+      last = append(last, n);
     }
-    buf = (char*)malloc(sizeof(char)*(MAX_LEN+1));
+    buf = malloc(sizeof(char)*(MAX_LEN+1));
   }
 
-  if(head == NULL) {
-    if(strlen(buf) != 0) {
-      head = (LLIST*)malloc(sizeof(LLIST));
-      head->primitive = 1;
-      head->data = buf;
-      head->next = NULL;
+  if(strlen(buf) != 0) {
+    n = malloc(sizeof(LIST));
+    n->data = buf;
+    n->type = ATOM;
+    n->next = NULL;
+    if(head == NULL) {
+      head = n;
+    } else {
+      last = append(last, n);
     }
-  } else {
-    last = list_append(last, buf, 1);
   }
 
   return head;

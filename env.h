@@ -2,15 +2,15 @@
 #ifndef __env__
 #define __env__ 1
 
-#include "llist.h"
+#include "list.h"
 #include "eval.h"
 
 typedef struct binding {
   char *name;
-  DATA *value;
-} BIND;
+  LIST *value;
+} BINDING;
 
-DATA *lookup_variable_value(char *variable, LLIST *env);
-LLIST *define_variable(char *var, DATA *value, LLIST *env);
+LIST *lookup_variable_value(char *variable, LIST *env);
+LIST *define_variable(char *var, LIST *value, LIST *env);
 
 #endif

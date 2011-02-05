@@ -1,6 +1,6 @@
-#include<ctype.h> /* for isdigit */
+#include <ctype.h> /* for isdigit */
+
 #include "str_utils.h"
-#include <stdio.h>
 
 int count_parens(char *s, int len) {
   int count=0;

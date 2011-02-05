@@ -1,51 +1,50 @@
 #include <string.h> /* for strcmp */
 #include <stdio.h> /* for printf */
 #include <stdlib.h> /* for malloc */
-#include "env.h"
-#include "llist.h"
-#include "eval.h"
 
-void print_frame(LLIST *frame);
+#include "env.h"
+#include "eval.h"
+#include "list.h"
+
+void print_frame(LIST *frame);
 
 /*
- * An environment is a list of frames. A frame is an LLIST of BINDs.
- * A BIND is a name, value binding pair defined as a struct, name is a char*
- * and value is a DATA*
+ * An environment is a list of frames. A frame is an LIST of BINDINGs.
+ * A BINDING is a name, value binding pair defined as a struct, name is a char*
+ * and value is a LIST*
  */
-DATA *lookup_variable_value(char *variable, LLIST *env) {
+LIST *lookup_variable_value(char *variable, LIST *env) {
   if(env == NULL) {
     printf("ERROR unknown variable: %s\n", variable);
     return NULL;
   } else {
-    BIND *binding;
-
-    for(LLIST *frame = (LLIST*)env->data; frame != NULL; frame = frame->next) {
-      binding = (BIND*)frame->data;
-      if(strcmp(variable, binding->name) == 0) {
+    BINDING *binding;
+    for(LIST *frame = (LIST*)env->data; frame != NULL; frame = frame->next) {
+      binding = (BINDING*)frame->data;
+      if(strcmp(variable, binding->name) == 0)
         return binding->value;
-      }
     }
     return lookup_variable_value(variable, env->next);
   }
 }
 
-LLIST *define_variable(char *var, DATA *value, LLIST *env) {
+LIST *define_variable(char *var, LIST *value, LIST *env) {
   /* allocate a new binding*/
-  BIND *binding = malloc(sizeof(BIND));
+  BINDING *binding = malloc(sizeof(BINDING));
   binding->name = var;
   binding->value = value;
 
   /* allocate a new node to be added to the frame */
-  LLIST *node = malloc(sizeof(LLIST));
+  LIST *node = malloc(sizeof(LIST));
   node->data = binding;
-  node->primitive = 1;
+  node->type = BIND;
   node->next = NULL;
 
-  /* get the frame, allocate a new env if needed */
-  LLIST *frame = NULL;
+  /* get the frame, allocating a new env if needed */
+  LIST *frame = NULL;
   if(env == NULL) {
-    env = malloc(sizeof(LLIST));
-    env->primitive = 0;
+    env = malloc(sizeof(LIST));
+    env->type = CONS;
     env->data = NULL;
   } else {
     frame = env->data;
@@ -66,10 +65,10 @@ LLIST *define_variable(char *var, DATA *value, LLIST *env) {
   return env;
 }
 
-void print_frame(LLIST *frame) {
+void print_frame(LIST *frame) {
   printf("(");
-  for(LLIST *n = frame; n != NULL; n = n->next) {
-    BIND *b = (BIND*)n->data;
+  for(LIST *n = frame; n != NULL; n = n->next) {
+    BINDING *b = (BINDING*)n->data;
     printf("(");
     printf("%s . ", b->name);
     print_data(b->value);

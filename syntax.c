@@ -2,51 +2,51 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "llist.h"
+#include "list.h"
 #include "eval.h"
 #include "syntax.h"
 #include "str_utils.h"
 
 /* self-evaluating expressions are numbers */
-int self_evaluating(DATA *expr) {
-  return (expr->type == ATOM && all_digits((char*)expr->data));
+int self_evaluating(LIST *exp) {
+  return (exp->type == ATOM && all_digits((char*)exp->data));
 }
 
 /* variables are just symbols (any other string)*/
-int variable(DATA *expr) {
-  return (expr->type == ATOM && !(self_evaluating(expr)));
+int variable(LIST *exp) {
+  return (exp->type == ATOM && !(all_digits((char*)exp->data)));
 }
 
-/* quoted expressions start with "quote" */
-int quoted(DATA *expr) {
-  return tagged_list(expr, "quote");
+/* quoted expessions start with "quote" */
+int quoted(LIST *exp) {
+  return tagged_list(exp, "quote");
 }
 
-int assignment(DATA *expr) {
-  return tagged_list(expr, "set!");
+int assignment(LIST *exp) {
+  return tagged_list(exp, "set!");
 }
 
-int definition(DATA *expr) {
-  return tagged_list(expr, "define");
+int definition(LIST *exp) {
+  return tagged_list(exp, "define");
 }
 
-int lambda(DATA *expr) {
-  return tagged_list(expr, "lambda");
+int lambda(LIST *exp) {
+  return tagged_list(exp, "lambda");
 }
 
-int if_expr(DATA *expr) {
-  return tagged_list(expr, "if");
+int if_exp(LIST *exp) {
+  return tagged_list(exp, "if");
 }
 
-int begin(DATA *expr) {
-  return tagged_list(expr, "begin");
+int begin(LIST *exp) {
+  return tagged_list(exp, "begin");
 }
 
 /* check if an expression is a list starting with some tag */
-int tagged_list(DATA *expr, const char *tag) {
-  if(expr->type == LIST) {
-    LLIST *l = expr->data;
-    if(l->data != NULL) // empty list
+int tagged_list(LIST *exp, const char *tag) {
+  if(exp->type == CONS) {
+    LIST *l = (LIST*)exp->data;
+    if(l->type == ATOM && l->data != NULL)
       return (strcmp((char*)l->data, tag) == 0);
     else
       return 0;
@@ -55,48 +55,54 @@ int tagged_list(DATA *expr, const char *tag) {
   }
 }
 
-DATA *text_of_quotation(DATA *expr) {
-  LLIST *l = (LLIST*)expr->data;
-  LLIST *n = l->next;
-  DATA *d = malloc(sizeof(DATA));
-  d->type = ATOM;
-  d->data = (char*)n->data;
+LIST *text_of_quotation(LIST *exp) {
+  LIST *l = exp->data;
+  LIST *cdr = l->next;
 
-  return d;
+  LIST *ret = malloc(sizeof(LIST));
+  ret->type = ATOM;
+  /* should we copy the data? if not, why malloc a new LIST? */
+  ret->data = (char*)cdr->data;
+  ret->next = NULL;
+  return ret;
 }
 
-DATA *definition_variable(DATA *expr) {
-  LLIST *cdr = ((LLIST*)expr->data)->next;
-  if(cdr->primitive == 1) {
-    DATA *d = malloc(sizeof(DATA));
+/* Doesn't handle (define (fn x) ... ), assumes exp is actually a define */
+LIST *definition_variable(LIST *exp) {
+  LIST *l = (LIST*)exp->data;
+  LIST *cdr = (LIST*)l->next;
+
+  if(cdr->type == ATOM) {
+    LIST *d = malloc(sizeof(LIST));
     d->type = ATOM;
     d->data = cdr->data;
     return d;
   } else {
-
+    return NULL;
   }
 }
 
-DATA *definition_value(DATA *expr) {
-  LLIST *cddr = (((LLIST*)expr->data)->next)->next;
-  DATA *d = malloc(sizeof(DATA));
+LIST *definition_value(LIST *exp) {
+  LIST *l = (LIST*)exp->data;
+  LIST *cddr = ((LIST*)l->next)->next;
+
+  LIST *d = malloc(sizeof(LIST));
   d->data = cddr->data;
 
-  if(cddr->primitive == 1) {
+  if(cddr->type == ATOM)
     d->type = ATOM;
-  } else {
-    d->type = LIST;
-  }
-
+  else
+    d->type = CONS;
   return d;
 }
 
-DATA *operator(DATA *expr) {
-  LLIST *car = ((LLIST*)expr->data);
-  return (DATA*)car->data;
+LIST *operator(LIST *exp) {
+  return (LIST*)exp->data;
 }
 
-LLIST *operands(DATA *expr) {
-  LLIST *cdr = ((LLIST*)expr->data)->next;
+LIST *operands(LIST *exp) {
+  LIST *l = (LIST*)exp->data;
+  LIST *cdr = (LIST*)l->next;
+
   return cdr;
 }
