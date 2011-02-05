@@ -1,30 +1,38 @@
 #ifndef __LIST__
-#define __LIST__ 1
+#define __LIST__ true
 
-/* In this linked-list implementation, nodes contain type information in the form of the following enum: */
-enum datatype {
-  ATOM, // Lisp atom, for now this is a char*
-  CONS, // Nested list, in this case LIST*
-  PROC,
-  BIND
-};
+/*
+  Linked-list implementation containing additional information about
+  the type of data held in each node.
 
-typedef struct node {
-  void *data;
-  enum datatype type;
-  struct node *next;
-} LIST;
+  I've chosen this implementation so that a list node can serve as
+  part of a larger list and as a basic data wrapper which can contain
+  either a list or atomic data.
 
-LIST *cons(LIST *list, LIST *new);
-LIST *insert(LIST *p, LIST *new);
-LIST *append(LIST *p, LIST *new);
-LIST *push(LIST **stack, LIST *new);
-LIST *pop(LIST **stack);
-void print_boxp(LIST *l);
-void print_sexp(LIST *head);
-int length_r(LIST *l);
-int length(LIST *l);
-void free_r(LIST *l);
-void foreach(LIST *head, void(*fun)(LIST*));
+  See http://en.wikipedia.org/wiki/Tagged_union for more details
+*/
 
+enum kind { Atom, List, Proc, Bind };
+
+typedef struct list_ {
+  struct list_ *next;
+  enum kind type;
+  union {
+    struct list_ *listData;
+    char *atomData;
+    //    proc *procData;
+    //    bind *bindData;
+  } kindData;
+} list;
+
+list *cons(list *new, list *old);
+list *insert(list *new, list *old);
+list *append(list *new, list *old);
+
+list *push(list *new, list **pstack);
+list *pop(list **pstack);
+
+void print_sexp(list *head);
+void print_boxp(list *head);
+void simple_rfree(list *l);
 #endif

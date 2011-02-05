@@ -1,24 +1,25 @@
-
 #include <stdlib.h> /* malloc */
 #include <stdio.h> /* printf */
+
 #include "list.h"
 
 /* Append new node to the front of the list, returns new front.
    Can be called with NULL old, returns NULL if new is NULL. */
-LIST *cons(LIST *old, LIST *new) {
+list *cons(list *new, list *old) {
   if(new == NULL)
     return NULL;
+
   new->next = old;
   return new;
 }
 
 /* Inserts new node right after the old node.
    Returns NULL if old or new is NULL */
-LIST *insert(LIST *old, LIST *new) {
-  if(old == NULL || new == NULL)
+list *insert(list *new, list *old) {
+  if(new == NULL || old == NULL)
     return NULL;
 
-  LIST *next = old->next;
+  list *next = old->next;
   new->next = next;
   old->next = new;
   
@@ -27,12 +28,12 @@ LIST *insert(LIST *old, LIST *new) {
 
 /* Walks down the list, appending new node to the very end.
    Returns the new node, returns NULL if old or new is NULL. */
-LIST *append(LIST *old, LIST *new) {
-  if(old==NULL || new == NULL)
+list *append(list *new, list *old) {
+  if(new == NULL || old == NULL)
     return NULL;
 
-  LIST *n = old;
-  LIST *nn = n->next;
+  list *n = old;
+  list *nn = n->next;
   while(nn != NULL) {
     n = nn;
     nn = nn->next;
@@ -43,12 +44,8 @@ LIST *append(LIST *old, LIST *new) {
 }
 
 /* Pushes new node onto stack, mutating the stack pointer.
-   Returns the new stack. Can be called on a pointer to NULL,
-   ie this is ok:
-
-   LIST *stack = NULL;
-   push(&stack, new); */
-LIST *push(LIST **pstack, LIST *new) {
+   Returns the new stack. Can be called on a pointer to NULL */
+list *push(list *new, list **pstack) {
   if(new == NULL)
     return NULL;
 
@@ -62,45 +59,55 @@ LIST *push(LIST **pstack, LIST *new) {
 }
 
 /* Pops from the stack, and mutates the stack pointer */
-LIST *pop(LIST **pstack) {
+list *pop(list **pstack) {
   if(pstack == NULL || *pstack == NULL)
     return NULL;
 
-  LIST *n = *pstack;
+  list *n = *pstack;
   *pstack = (*pstack)->next;
   return n;
 }
 
-/* Prints a list in box-and-pointer style */
-void print_boxp(LIST *head) {
-  LIST *n = head;
-  while(n!=NULL) {
-    if(n->type == ATOM) {
-      printf("[%s]", (char*)n->data);
-    } else if(n->type == PROC) {
-      printf("[<proc>]");
-    } else {
-      printf("[ ");
-      print_boxp(n->data);
-      printf(" ]");
-    }
+void print_data(list *node) {
+  if(node->type == Atom) {
+    printf("%s", node->kindData.atomData);
+  }
 
-    if(n->next!=NULL)
+//else if(n->type == Proc) { // TODO fix procedure type to have some name
+//                               // and print that
+//    printf("<proc>");
+//  } else if(n->type == Bind) { // TODO print the actual binding name, value
+//    printf("<bind>");
+//  }
+}
+
+/* Prints a list in a box-and-pointer style */
+void print_boxp(list *head) {
+  list *n = head;
+  while(n != NULL) {
+    printf("[");
+    if(n->type != List)
+      print_data(n);
+    else
+      print_boxp(n->kindData.listData);
+    printf("]");
+
+    if(n->next != NULL)
       printf("->");
     n = n->next;
   }
 }
 
 /* Prints a list as an s-expression, recursively printing nested lists */
-void print_sexp(LIST *head) {
-  LIST *n = head;
+void print_sexp(list *head) {
+  list *n = head;
   printf("(");
   while(n != NULL) {
-    if(n->type == ATOM) {
-      printf("%s", (char*)n->data);
-    } else {
-      print_sexp((LIST*)n->data);
-    }
+    if(n->type != List)
+      print_data(n);
+    else
+      print_sexp(n->kindData.listData);
+
     if(n->next != NULL)
       printf(" ");
     n = n->next;
@@ -108,49 +115,52 @@ void print_sexp(LIST *head) {
   printf(")");
 }
 
-/* Simple length of the list (nested lists count for 1) */
-int length(LIST *head) {
-  int len=0;
-  for(LIST *n = head; n!=NULL; n=n->next)
-    len++;
-  return len;
-}
-
-/* Recursively counts the length of the list and all sublists */
-int length_r(LIST *head) {
-  int len=0;
-  for(LIST *n = head; n != NULL; n = n->next) {
-    if(n->type != CONS) {
-      len++;
-    } else {
-      if(n->data != NULL)
-        len+=length_r(n->data);
-    }
-  }
-  return len;
-}
+///* Simple length of the list (nested lists count for 1) */
+//int length(list *head) {
+//  int len=0;
+//  for(list *n = head; n!=NULL; n=n->next)
+//    len++;
+//  return len;
+//}
+//
+///* Recursively counts the length of the list and all sublists */
+//int length_r(list *head) {
+//  int len=0;
+//  for(list *n = head; n != NULL; n = n->next) {
+//    if(n->type != CONS) {
+//      len++;
+//    } else {
+//      if(n->data != NULL)
+//        len+=length_r(n->data);
+//    }
+//  }
+//  return len;
+//}
+//
 
 /* recursively frees a list, but only frees ATOM data,
    so could would leak if PROCs were in the list */
-void free_r(LIST *l) {
-  LIST *n, *nn;
-  for(n=l; n != NULL; ) {
-    if(n->type == ATOM)
-      free(n->data);
-    else if(n->type == CONS)
-      if(n->data != NULL)
-        free_r(n->data);
-    nn = n->next;
+void simple_rfree(list *l) {
+  list *n = l;
+  list *tmp;
+  while(n != NULL) {
+    if(n->type == Atom)
+      free(n->kindData.atomData);
+    else if(n->type == List)
+      if(n->kindData.listData != NULL)
+        simple_rfree(n->kindData.listData);
+
+    tmp = n->next;
     free(n);
-    n=nn;
+    n = tmp;
   }
 }
 
-/* Calls the procedure "fn" for each node in the list */
-void foreach(LIST *head, void(*fn)(LIST*)) {
-  if(head == NULL)
-    return;
-  for(LIST *n = head; n != NULL; n = n->next) {
-    fn(n);
-  }
-}
+///* Calls the procedure "fn" for each node in the list */
+//void foreach(list *head, void(*fn)(list*)) {
+//  if(head == NULL)
+//    return;
+//  for(list *n = head; n != NULL; n = n->next) {
+//    fn(n);
+//  }
+//}
