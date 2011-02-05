@@ -1,7 +1,7 @@
 #ifndef __read__
-#define __read__ 1
+#define __read__ true
 
-LIST *read_sexp(FILE *f);
-LIST *parse_sexp(LIST *lines);
+list *read_sexp(FILE *f);
+list *parse_sexp(list *lines);
 
 #endif
