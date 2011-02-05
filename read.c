@@ -7,7 +7,7 @@
 
 #include "read.h"
 
-#define MAX_LEN 100
+#define MAX_LINE 1000
 
 /* Parses an s-expression into a linked-list (actually a tree) */
 LIST *parse_sexp(LIST *lines) { // lines is the output of read_sexp
@@ -126,39 +126,44 @@ LIST *parse_sexp(LIST *lines) { // lines is the output of read_sexp
   return ret;
 }
 
-/* read an s-expression from a file, buffer lines in a linked-list */
-LIST *read_sexp(FILE *f) {
-  char *buf = (char*)malloc(sizeof(char)*(MAX_LEN+1));
-  LIST *head = NULL;
-  LIST *last = NULL;
-  LIST *n;
-  int count=0;
 
-  while(fgets(buf, MAX_LEN+1, f) != NULL &&
-        (count+=count_parens(buf, MAX_LEN+1)) > 0) {
+/* Read an s-expression from a FILE and buffer lines in a linked-list */
+list *read_sexp(FILE *f) {
+  char *buf = malloc(sizeof(char) * MAX_LINE);
+  if(buf == NULL)
+    return NULL;
 
-    n = malloc(sizeof(LIST));
-    n->data = buf;
-    n->type = ATOM;
-    n->next = NULL;
+  list *head = NULL;
+  list *last = NULL;
+  list *n;
+  int count = 0;
+  /* while there are valid lines and while the parens are not matched */
+  while(fgets(buf, MAX_LINE, f) != NULL &&
+        (count += count_parens(buf, MAX_LINE)) > 0) {
+
+    n = malloc(sizeof(list));
+    init_list(n, NULL, Atom, buf);
+
     if(head == NULL) {
       head = n;
       last = head;
     } else {
-      last = append(last, n);
+      last = append(n, last);
     }
-    buf = malloc(sizeof(char)*(MAX_LEN+1));
+    buf = malloc(sizeof(char) * MAX_LINE);
+    if(buf == NULL) {
+      simple_rfree(head);
+      return NULL;
+    }
   }
 
   if(strlen(buf) != 0) {
-    n = malloc(sizeof(LIST));
-    n->data = buf;
-    n->type = ATOM;
-    n->next = NULL;
+    n = malloc(sizeof(list));
+    init_list(n, NULL, Atom, buf);
     if(head == NULL) {
       head = n;
     } else {
-      last = append(last, n);
+      last = append(n, last);
     }
   }
 
