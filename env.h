@@ -1,16 +1,11 @@
-
 #ifndef __env__
 #define __env__ 1
 
+#include "types.h"
 #include "list.h"
-#include "eval.h"
 
-typedef struct binding {
-  char *name;
-  LIST *value;
-} BINDING;
-
-LIST *lookup_variable_value(char *variable, LIST *env);
-LIST *define_variable(char *var, LIST *value, LIST *env);
-
+list *init_global();
+list *lookup_variable_value(char *variable, list *env);
+list *define_variable(char *var, list *value, list *env);
+list *set_variable(char *var, list *value, list *env);
 #endif

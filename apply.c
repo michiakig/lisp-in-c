@@ -3,54 +3,48 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "llist.h"
+#include "types.h"
+#include "list.h"
+
 #include "eval.h"
 #include "apply.h"
 
-//int main(int argc, char **argv) {
-//  PROCEDURE *p = malloc(sizeof(PROCEDURE));
-//  p->fun = (DATA* (*) (LLIST*))primitive_sum;
-//  LLIST *a = malloc(sizeof(LLIST));
-//  DATA d[2];
-//
-//  a->next = NULL;
-//  a->primitive = 1;
-//  d[0].type = ATOM;
-//  d[0].data = "1";
-//  a->data = &d[0];
-//
-//  d[1].type = ATOM;
-//  d[1].data = "2";
-//
-//  list_append(a, &d[1], 1);
-//
-//  DATA *ret = apply(p, a);
-//  print_data(ret);
-//  printf("\n");
-//}
+void init_proc(proc *p, list *params, list *body,
+               list *env, list* (*fn) (list *argl)) {
+  p->params = params;
+  p->body = body;
+  p->env = env;
+  p->fn = fn;
+}
 
-LIST *primitive_add(LIST *argl) {
-  double sum=0;
+list *primitive_add(list *argl) {
+
+  double sum = 0;
   char *s;
-  for(LIST *n=argl; n != NULL; n = n->next) {
-    if(n->data != NULL && arg->type == ATOM) {
-      s = (char*)arg->data;
+  printf("primitive add ");
+  print_sexp(argl);
+  printf("\n");
+
+  for(list *arg = argl; arg != NULL; arg = arg->next) {
+    if(arg->type == Atom) {
+      s = arg->kindData.atomData;
+
       sum += atoi(s);
     }
   }
-  s = malloc(sizeof(char)*100); // TODO calculate the num digits
+  s = malloc(sizeof(char)*100); /* TODO: calculate the num digits */
   sprintf(s, "%f", sum);
 
-  LIST *d = malloc(sizeof(LIST));
-  d->type = ATOM;
-  d->data = s;
-  return d;
+  list *ret = malloc(sizeof(list));
+  init_list(ret, NULL, Atom, s);
+
+  return ret;
 }
 
-LIST *apply(PROCEDURE *proc, LLIST *argl) {
-  if(proc->fun != NULL) { // primitive procedure
-    return (*(proc->fun))(argl);
+list *apply(proc *p, list *argl) {
+  if(p->fn != NULL) { // primitive procedure
+    return (*(p->fn))(argl);
   } else {
-    //
+    // TODO: compound procedures
   }
 }

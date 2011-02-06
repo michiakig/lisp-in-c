@@ -1,19 +1,13 @@
-
 #ifndef __apply__
 #define __apply__ 1
 
-#include "eval.h"
-#include "llist.h"
+#include "types.h"
+#include "list.h"
 
-typedef struct procedure {
-  //  enum datatype type;
-  LIST *params;
-  LIST *body;
-  LIST *env;
-  LIST* (*fun) (LIST *argl);
-} PROCEDURE;
+void init_proc(proc *p, list *params, list *body,
+               list *env, list* (*fun) (list *argl));
 
-LIST *primitive_add(LIST *argl);
-LIST *apply(PROCEDURE *proc, LIST *argl);
+list *primitive_add(list *argl);
+list *apply(proc *p, list *argl);
 
 #endif

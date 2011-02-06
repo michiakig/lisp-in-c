@@ -1,12 +1,15 @@
 
 #ifndef __eval__
-#define __eval__
+#define __eval__ 1
 
+#include "types.h"
 #include "list.h"
 
-void print_data(LIST *d);
-LIST *eval(LIST *expr, LIST **env);
-LIST *eval_define(LIST *expr, LIST **env);
-LIST *eval_appl(LIST *exp, LIST **env);
+void print_exp(list *exp);
+
+list *eval(list *exp, list **env);
+list *eval_define(list *exp, list **env);
+list *eval_appl(list *exp, list **env);
+list *eval_assignment(list *exp, list **env);
 
 #endif

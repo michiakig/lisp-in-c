@@ -1,24 +1,24 @@
-
 #ifndef __syntax__
 #define __syntax__ 1
 
+#include "types.h"
 #include "list.h"
 
-int self_evaluating(LIST *exp);
-int variable(LIST *exp);
-int quoted(LIST *exp);
-int tagged_list(LIST *exp, const char *tag);
-int assignment(LIST *exp);
-int definition(LIST *exp);
-int lambda(LIST *exp);
-int if_exp(LIST *exp);
-int begin(LIST *exp);
+int self_evaluating(list *exp);
+int variable(list *exp);
+int quoted(list *exp);
+int tagged_list(list *exp, const char *tag);
+int assignment(list *exp);
+int definition(list *exp);
+int lambda(list *exp);
+int if_exp(list *exp);
+int begin(list *exp);
 
-LIST *text_of_quotation(LIST *exp);
-LIST *definition_value(LIST *exp);
-LIST *definition_variable(LIST *exp);
+list *text_of_quotation(list *exp);
+list *definition_value(list *exp);
+list *definition_variable(list *exp);
 
-LIST *operands(LIST *exp);
-LIST *operator(LIST *exp);
+list *operands(list *exp);
+list *operator(list *exp);
 
 #endif

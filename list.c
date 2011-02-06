@@ -1,7 +1,21 @@
 #include <stdlib.h> /* malloc */
 #include <stdio.h> /* printf */
 
+#include "types.h"
 #include "list.h"
+
+void init_list(list *node, list *next, enum kind type, void *data) {
+  node->next = next;  
+  node->type = type;
+  if(type == Atom)
+    node->kindData.atomData = (char*)data;
+  else if(type == List)
+    node->kindData.listData = (list*)data;
+  else if(type == Proc)
+    node->kindData.procData = (proc*)data;
+  else if(type == Bind)
+    node->kindData.bindData = (bind*)data;
+}
 
 /* Append new node to the front of the list, returns new front.
    Can be called with NULL old, returns NULL if new is NULL. */

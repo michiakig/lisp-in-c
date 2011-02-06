@@ -1,5 +1,7 @@
-#ifndef __LIST__
-#define __LIST__ true
+#ifndef __list__
+#define __list__ 1
+
+#include "types.h"
 
 /*
   Linked-list implementation containing additional information about
@@ -12,18 +14,7 @@
   See http://en.wikipedia.org/wiki/Tagged_union for more details
 */
 
-enum kind { Atom, List, Proc, Bind };
-
-typedef struct list_ {
-  struct list_ *next;
-  enum kind type;
-  union {
-    struct list_ *listData;
-    char *atomData;
-    //    proc *procData;
-    //    bind *bindData;
-  } kindData;
-} list;
+void init_list(list *node, list *next, enum kind type, void *data);
 
 list *cons(list *new, list *old);
 list *insert(list *new, list *old);
@@ -35,4 +26,5 @@ list *pop(list **pstack);
 void print_sexp(list *head);
 void print_boxp(list *head);
 void simple_rfree(list *l);
+
 #endif

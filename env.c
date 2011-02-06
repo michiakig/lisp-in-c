@@ -2,76 +2,114 @@
 #include <stdio.h> /* for printf */
 #include <stdlib.h> /* for malloc */
 
-#include "env.h"
-#include "eval.h"
+#include "types.h"
 #include "list.h"
 
-void print_frame(LIST *frame);
+#include "env.h"
+#include "eval.h"
+#include "apply.h"
+
+void print_frame(list *frame);
+
+list *init_global() {
+  proc *add = malloc(sizeof(proc));
+  init_proc(add, NULL, NULL, NULL, &primitive_add);
+
+  list *value = malloc(sizeof(list));
+  init_list(value, NULL, Proc, add);
+
+  bind *b = malloc(sizeof(bind));
+  b->name = "+";
+  b->value = value;
+
+  list *frame = malloc(sizeof(list));
+  init_list(frame, NULL, Bind, b);
+
+  list *env = malloc(sizeof(list));
+  init_list(env, NULL, List, frame);
+  return env;
+}
 
 /*
- * An environment is a list of frames. A frame is an LIST of BINDINGs.
- * A BINDING is a name, value binding pair defined as a struct, name is a char*
- * and value is a LIST*
+ * An environment is a list of frames. A frame is a list of binds
+ * A bind is a (name, value) binding pair defined as a struct, name is a char*
+ * and value is a list*
  */
-LIST *lookup_variable_value(char *variable, LIST *env) {
+
+bind *lookup_variable_binding(char *variable, list *env) {
   if(env == NULL) {
-    printf("ERROR unknown variable: %s\n", variable);
     return NULL;
   } else {
-    BINDING *binding;
-    for(LIST *frame = (LIST*)env->data; frame != NULL; frame = frame->next) {
-      binding = (BINDING*)frame->data;
+    bind *binding;
+    for(list *frame = env->kindData.listData; frame != NULL; frame = frame->next) {
+      binding = frame->kindData.bindData;
       if(strcmp(variable, binding->name) == 0)
-        return binding->value;
+        return binding;
     }
-    return lookup_variable_value(variable, env->next);
+    return lookup_variable_binding(variable, env->next);
   }
 }
 
-LIST *define_variable(char *var, LIST *value, LIST *env) {
+list *lookup_variable_value(char *variable, list *env) {
+  bind *binding = lookup_variable_binding(variable, env);
+  if(binding == NULL)
+    printf("ERROR undefined variable: %s\n", variable);
+  return binding->value;
+}
+
+list *define_variable(char *var, list *value, list *env) {
+  bind *binding = lookup_variable_binding(var, env);
+  if(binding != NULL) {
+    printf("ERROR variable already defined: %s\n", var);
+    return NULL;
+  }
+
   /* allocate a new binding*/
-  BINDING *binding = malloc(sizeof(BINDING));
+  binding = malloc(sizeof(bind));
   binding->name = var;
   binding->value = value;
 
   /* allocate a new node to be added to the frame */
-  LIST *node = malloc(sizeof(LIST));
-  node->data = binding;
-  node->type = BIND;
-  node->next = NULL;
+  list *node = malloc(sizeof(list));
+  init_list(node, NULL, Bind, binding);
 
   /* get the frame, allocating a new env if needed */
-  LIST *frame = NULL;
+  list *frame = NULL;
   if(env == NULL) {
-    env = malloc(sizeof(LIST));
-    env->type = CONS;
-    env->data = NULL;
+    env = malloc(sizeof(list));
+    init_list(env, NULL, List, NULL);
   } else {
-    frame = env->data;
+    frame = env->kindData.listData;
   }
 
   /* if the env was NULL or the env was empty, set frame to the new node */
-  if(frame == NULL) {
+  if(frame == NULL)
     frame = node;
-  } else { /* else cons the node onto the frame */
-    node->next = frame;
-    frame = node;
-  }
+  else /* else cons the node onto the frame */
+    frame = cons(node, frame);
 
-  print_frame(frame);
-  printf("\n");
-
-  env->data = frame;
+  env->kindData.listData = frame;
   return env;
 }
 
-void print_frame(LIST *frame) {
+list *set_variable(char *var, list *value, list *env) {
+  bind *binding = lookup_variable_binding(var, env);
+  if(binding == NULL) {
+    printf("ERROR undefined variable: %s\n", var);
+    return NULL;
+  }
+
+  binding->value = value; // TODO: memory
+  return env;
+}
+
+void print_frame(list *frame) {
   printf("(");
-  for(LIST *n = frame; n != NULL; n = n->next) {
-    BINDING *b = (BINDING*)n->data;
+  for(list *n = frame; n != NULL; n = n->next) {
+    bind *b = n->kindData.bindData;
     printf("(");
     printf("%s . ", b->name);
-    print_data(b->value);
+    print_exp(b->value);
     printf(")");
     if(n->next != NULL)
       printf(" ");
