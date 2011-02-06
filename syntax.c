@@ -30,7 +30,8 @@ int self_evaluating(list *exp) {
 
 /* variables are just symbols (any other string) */
 int variable(list *exp) {
-  return exp->type == Atom && !all_digits(exp->kindData.atomData);
+  return exp->type == Atom &&
+    (!all_digits(exp->kindData.atomData) || strcmp
 }
 
 /* quoted expessions start with "quote" */

@@ -47,10 +47,8 @@ list *append(list *new, list *old) {
     return NULL;
 
   list *n = old;
-  list *nn = n->next;
-  while(nn != NULL) {
-    n = nn;
-    nn = nn->next;
+  while(n->next != NULL) {
+    n = n->next;
   }
 
   n->next = new;

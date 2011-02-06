@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
 }
 
 list *eval(list *exp, list **env) {
+
   list *ret = malloc(sizeof(list));
   init_list(ret, NULL, Atom, NULL);
 
@@ -145,16 +146,18 @@ list *eval_appl(list *exp, list **env) {
   list *ev_opands = NULL;
 
   for(list *n = opands_data; n != NULL; n = n->next) {
-    list *ev_opand = eval(shallow_node_copy(n), env);
-    
+
+    list *copy = shallow_node_copy(n);
+    list *ev_opand = eval(copy, env);
+
+    list *arg = malloc(sizeof(list));
+    init_list(arg, NULL, List, ev_opand);    
     if(ev_opands == NULL) {
-      ev_opands = ev_opand;
+      ev_opands = arg;
     } else {
-      append(ev_opand, ev_opands);
+      append(arg, ev_opands);
     }
   }
-
-  printf("applying\n");
 
   /* apply the operator to the operands */
   return apply(ev_op->kindData.procData, ev_opands);

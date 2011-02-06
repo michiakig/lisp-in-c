@@ -18,17 +18,13 @@ void init_proc(proc *p, list *params, list *body,
 }
 
 list *primitive_add(list *argl) {
-
   double sum = 0;
   char *s;
-  printf("primitive add ");
-  print_sexp(argl);
-  printf("\n");
-
   for(list *arg = argl; arg != NULL; arg = arg->next) {
-    if(arg->type == Atom) {
-      s = arg->kindData.atomData;
-
+    /* unpack args */
+    list *l = arg->kindData.listData;
+    if(l->type == Atom) {
+      s = l->kindData.atomData;
       sum += atoi(s);
     }
   }

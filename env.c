@@ -54,6 +54,8 @@ list *lookup_variable_value(char *variable, list *env) {
   bind *binding = lookup_variable_binding(variable, env);
   if(binding == NULL)
     printf("ERROR undefined variable: %s\n", variable);
+
+
   return binding->value;
 }
 
