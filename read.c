@@ -67,6 +67,9 @@ list *parse_sexp(list *lines) {
         // append the just finished list to the outer, unfinished list
         last = append(n, lcontainer->kindData.listData);
         head = hcontainer->kindData.listData;
+        free(hcontainer);
+        free(lcontainer);
+          
       }
 
       if(head == NULL) { // empty list
