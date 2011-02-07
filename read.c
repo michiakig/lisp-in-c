@@ -153,7 +153,7 @@ list *read_sexp(FILE *f) {
     }
   }
 
-  if(strlen(buf) != 0) {
+  if(buf[0] != '\n') {
     n = malloc(sizeof(list));
     init_list(n, NULL, Atom, buf);
     if(head == NULL) {
