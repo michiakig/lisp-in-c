@@ -23,15 +23,23 @@
   The syntax selectors assume the the exp passed is of the correct type
  */
 
-/* self-evaluating expressions are just numbers */
+int boolean_literal(char *str) {
+  return (strcmp(str, "#f") == 0)
+    || (strcmp(str, "#t") == 0)
+    || (strcmp(str, "#T") == 0)
+    || (strcmp(str, "#F") == 0);
+}
+
+/* self-evaluating expressions are numbers and boolean literals */
 int self_evaluating(list *exp) {
-  return exp->type == Atom && all_digits(exp->kindData.atomData);
+  return exp->type == Atom && (all_digits(exp->kindData.atomData)
+                               || boolean_literal(exp->kindData.atomData));
 }
 
 /* variables are just symbols (any other string) */
 int variable(list *exp) {
-  return exp->type == Atom &&
-    (!all_digits(exp->kindData.atomData) || strcmp
+  return exp->type == Atom && !all_digits(exp->kindData.atomData)
+    && exp->kindData.atomData[0] != '#';
 }
 
 /* quoted expessions start with "quote" */
@@ -114,4 +122,44 @@ list *operands(list *exp) {
   list *ret = malloc(sizeof(list));
   init_list(ret, NULL, List, cdr);    
   return ret;  
+}
+
+list *if_predicate(list *exp) {
+  list *l = exp->kindData.listData;
+  list *pred = shallow_node_copy(l->next);
+  return pred;
+}
+
+list *if_consequent(list *exp) {
+  list *l = exp->kindData.listData;
+  list *consq = shallow_node_copy(l->next->next);
+  return consq;
+}
+
+list *if_alternative(list *exp) {
+  list *l = exp->kindData.listData;
+  list *alt = shallow_node_copy(l->next->next->next);
+  return alt;
+}
+
+list *begin_sequence(list *exp) {
+  list *l = exp->kindData.listData;
+  return l->next;
+}
+
+list *lambda_params(list *exp) {
+  list *l = exp->kindData.listData;
+  list *cdr = l->next;
+  if(cdr->type != List)
+    printf("ERROR!! malformed lambda expression: params is not a list??\n");
+  list *params = cdr->kindData.listData;
+  return shallow_node_copy(cdr);
+}
+
+list *lambda_body(list *exp) {
+  list *l = exp->kindData.listData;
+  list *cddr = l->next->next;
+  list *ret = malloc(sizeof(list));
+  init_list(ret, NULL, List, cddr);
+  return ret;
 }

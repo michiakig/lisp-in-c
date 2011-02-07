@@ -5,11 +5,12 @@
 #include "types.h"
 #include "list.h"
 
-void print_exp(list *exp);
-
 list *eval(list *exp, list **env);
 list *eval_define(list *exp, list **env);
 list *eval_appl(list *exp, list **env);
 list *eval_assignment(list *exp, list **env);
+list *eval_if(list *exp, list **env);
+list *eval_sequence(list *exps, list **env);
+list *eval_lambda(list *exp, list **env);
 
 #endif

@@ -21,4 +21,12 @@ list *definition_variable(list *exp);
 list *operands(list *exp);
 list *operator(list *exp);
 
+list *if_predicate(list *exp);
+list *if_consequent(list *exp);
+list *if_alternative(list *exp);
+
+list *begin_sequence(list *exp);
+list *lambda_params(list *exp);
+list *lambda_body(list *exp);
+
 #endif

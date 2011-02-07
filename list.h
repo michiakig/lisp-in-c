@@ -23,8 +23,8 @@ list *append(list *new, list *old);
 list *push(list *new, list **pstack);
 list *pop(list **pstack);
 
-void print_sexp(list *head);
-void print_boxp(list *head);
 void simple_rfree(list *l);
+
+list *shallow_node_copy(list *orig);
 
 #endif

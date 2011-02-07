@@ -8,25 +8,27 @@
 #include "env.h"
 #include "eval.h"
 #include "apply.h"
+#include "print.h"
 
-void print_frame(list *frame);
+list *make_primitive(list* (*f) (list*)) {
+  proc *p = malloc(sizeof(proc));
+  init_proc(p, NULL, NULL, NULL, f);
+  list *l = malloc(sizeof(list));
+  init_list(l, NULL, Proc, p);
+  return l;
+}
 
 list *init_global() {
-  proc *add = malloc(sizeof(proc));
-  init_proc(add, NULL, NULL, NULL, &primitive_add);
+  list *env = NULL;
+  env =  define_variable("+", make_primitive(&primitive_add), env);
+  env =  define_variable("*", make_primitive(&primitive_multiply), env);
+  env =  define_variable("-", make_primitive(&primitive_subtract), env);
+  env =  define_variable("/", make_primitive(&primitive_divide), env);
 
-  list *value = malloc(sizeof(list));
-  init_list(value, NULL, Proc, add);
+  env =  define_variable("<", make_primitive(&primitive_lt), env);
+  env =  define_variable(">", make_primitive(&primitive_gt), env);
+  env =  define_variable("=", make_primitive(&primitive_eq), env);
 
-  bind *b = malloc(sizeof(bind));
-  b->name = "+";
-  b->value = value;
-
-  list *frame = malloc(sizeof(list));
-  init_list(frame, NULL, Bind, b);
-
-  list *env = malloc(sizeof(list));
-  init_list(env, NULL, List, frame);
   return env;
 }
 
@@ -52,11 +54,12 @@ bind *lookup_variable_binding(char *variable, list *env) {
 
 list *lookup_variable_value(char *variable, list *env) {
   bind *binding = lookup_variable_binding(variable, env);
-  if(binding == NULL)
+  if(binding == NULL) {
     printf("ERROR undefined variable: %s\n", variable);
-
-
-  return binding->value;
+    return NULL;
+  } else {
+    return binding->value;
+  }
 }
 
 list *define_variable(char *var, list *value, list *env) {
@@ -105,16 +108,33 @@ list *set_variable(char *var, list *value, list *env) {
   return env;
 }
 
-void print_frame(list *frame) {
-  printf("(");
-  for(list *n = frame; n != NULL; n = n->next) {
-    bind *b = n->kindData.bindData;
-    printf("(");
-    printf("%s . ", b->name);
-    print_exp(b->value);
-    printf(")");
-    if(n->next != NULL)
-      printf(" ");
+list *extend_environment(list *vars, list *vals, list *env) {
+  printf("vars: ");
+  print_sexp(vars);
+  printf("\n");
+
+  printf("vals: ");
+  print_sexp(vals);
+  printf("\n");
+
+  list *frame;
+  list *r, *l;
+  for(r = vars, l = vals; r != NULL && l != NULL; r = r->next, l = l->next) {
+    bind *binding = malloc(sizeof(bind));
+    binding->name = r->kindData.atomData;
+    binding->value = l->kindData.listData;
+    list *frame_node = malloc(sizeof(list));
+    init_list(frame_node, NULL, Bind, binding);
+    frame = cons(frame_node, frame);
   }
-  printf(")");
+
+  if(r != NULL || l != NULL) {
+    printf("ERROR extend_environment: mismatching number of vars and vals.\n");
+    return NULL;
+  }
+
+  list *env_node = malloc(sizeof(list));
+  init_list(env_node, NULL, List, frame);
+
+  return cons(env_node, env);
 }
