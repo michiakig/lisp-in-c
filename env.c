@@ -68,8 +68,7 @@ list *lookup_variable_value(char *variable, list *env) {
 list *define_variable(char *var, list *value, list *env) {
   bind *binding = lookup_variable_binding(var, env);
   if(binding != NULL) {
-    printf("ERROR variable already defined: %s\n", var);
-    return NULL;
+    printf("WARNING variable already defined: %s\n", var);
   }
 
   /* allocate a new binding*/
