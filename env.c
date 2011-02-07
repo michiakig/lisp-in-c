@@ -20,14 +20,14 @@ list *make_primitive(list* (*f) (list*)) {
 
 list *init_global() {
   list *env = NULL;
-  env =  define_variable("+", make_primitive(&primitive_add), env);
-  env =  define_variable("*", make_primitive(&primitive_multiply), env);
-  env =  define_variable("-", make_primitive(&primitive_subtract), env);
-  env =  define_variable("/", make_primitive(&primitive_divide), env);
+  env = define_variable("+", make_primitive(&primitive_add), env);
+  env = define_variable("*", make_primitive(&primitive_multiply), env);
+  env = define_variable("-", make_primitive(&primitive_subtract), env);
+  env = define_variable("/", make_primitive(&primitive_divide), env);
 
-  env =  define_variable("<", make_primitive(&primitive_lt), env);
-  env =  define_variable(">", make_primitive(&primitive_gt), env);
-  env =  define_variable("=", make_primitive(&primitive_eq), env);
+  env = define_variable("<", make_primitive(&primitive_lt), env);
+  env = define_variable(">", make_primitive(&primitive_gt), env);
+  env = define_variable("=", make_primitive(&primitive_eq), env);
 
   return env;
 }
@@ -42,6 +42,9 @@ bind *lookup_variable_binding(char *variable, list *env) {
   if(env == NULL) {
     return NULL;
   } else {
+    //    print_env(env);
+    //    printf("\n");
+
     bind *binding;
     for(list *frame = env->kindData.listData; frame != NULL; frame = frame->next) {
       binding = frame->kindData.bindData;
@@ -109,15 +112,15 @@ list *set_variable(char *var, list *value, list *env) {
 }
 
 list *extend_environment(list *vars, list *vals, list *env) {
-  printf("vars: ");
-  print_sexp(vars);
-  printf("\n");
+//  printf("vars: ");
+//  print_sexp(vars);
+//  printf("\n");
+//
+//  printf("vals: ");
+//  print_sexp(vals);
+//  printf("\n");
 
-  printf("vals: ");
-  print_sexp(vals);
-  printf("\n");
-
-  list *frame;
+  list *frame = NULL;
   list *r, *l;
   for(r = vars, l = vals; r != NULL && l != NULL; r = r->next, l = l->next) {
     bind *binding = malloc(sizeof(bind));

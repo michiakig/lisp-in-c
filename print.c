@@ -76,8 +76,9 @@ void print_frame(list *frame) {
 
 void print_env(list *env) {
   printf("(");
-  for(list *f = env->kindData.listData; f != NULL; f = f->next) {
-    print_frame(f);
+  for(list *f = env; f != NULL; f = f->next) {
+    print_frame(f->kindData.listData);
+    printf("\n");
     if(f->next != NULL)
       printf(" ");
   }

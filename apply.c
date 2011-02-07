@@ -78,13 +78,14 @@ list *apply(proc *p, list *argl) {
   if(p->fn != NULL) { // primitive procedure
     return (*(p->fn))(argl);
   } else {
-    print_env(p->env);
-    printf("\n");
-    fflush(stdin);
+    //        print_env(p->env);
+    //        printf("");
+    //        printf("\n");
+    //        fflush(stdin);
     list *extended_env = extend_environment(p->params, argl, p->env);
-    print_env(extended_env);
-    printf("\n");
-    fflush(stdin);
+    //   print_env(extended_env);
+    //    printf("\n");
+    //    fflush(stdin);
     return eval_sequence(p->body, &extended_env);
   }
 }
