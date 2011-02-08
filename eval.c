@@ -7,27 +7,34 @@
 #include "str_utils.h"
 
 #include "eval.h"
-#include "apply.h"
 #include "read.h"
+#include "hasht.h"
+
 #include "syntax.h"
 #include "env.h"
 #include "print.h"
+
+#include "apply.h"
 
 list *global_env;
 
 char *in_prompt = ";;; C-eval input:";
 char *val_prompt = ";;; C-eval value:";
 
+struct nlist *hashtable[HASHSIZE];
+
 int truthy(list *exp) {
-  if(exp->type == Atom)
-    return !(strcmp(exp->kindData.atomData, "#f") == 0);
+  if(exp->type == Symbol)
+    return exp->data.symbolData == intern("#f", hashtable);
   else
     return 1;
 }
 
 int main(int argc, char **argv) {
   /* initialize global environment */
-  global_env = init_global();
+  global_env = init_global(hashtable);
+  
+  init_hashtable(hashtable, HASHSIZE);
 
   printf(";;; type \"q\" to quit\n");
   list *input = NULL;
@@ -37,32 +44,36 @@ int main(int argc, char **argv) {
 
     if(input != NULL) {
 
-      if(input->type == Atom && input->kindData.atomData != NULL &&
-         strcmp(input->kindData.atomData, "q\n") == 0) {
+      if(input->type == String && input->data.stringData != NULL &&
+         strcmp(input->data.stringData, "q\n") == 0) {
         exit(0);
       }
-      list *exp = parse_sexp(input);
+
+      list *exp = parse_sexp(input, hashtable);
       simple_rfree(input);
 
       list *val = eval(exp, &global_env);
-      
+      //      simple_rfree(exp);
+
       if(val != NULL) {
         printf("%s\n", val_prompt);
         print_exp(val);
+        //        simple_rfree(val);
         printf("\n");
-      } 
+      }
     }
   }
+  free_hasht(hashtable);
 }
 
 list *eval(list *exp, list **env) {
-  list *ret;
+  list *ret = (list *)malloc(sizeof(list));
 
   if(self_evaluating(exp)) {
     ret = exp;
 
   } else if(variable(exp)) {
-    ret = lookup_variable_value(exp->kindData.atomData, *env);
+    ret = lookup_variable_value(exp->data.symbolData, *env);
 
   } else if(quoted(exp)) {
     ret = text_of_quotation(exp);
@@ -93,26 +104,27 @@ list *eval_define(list *exp, list **env) {
   list *var = definition_variable(exp);
   list *val = eval(definition_value(exp), env);
 
-  // TODO: assert that var is an Atom?
-  /* mutates the env */
-  *env = define_variable(var->kindData.atomData, val, *env);
+  list *new_env = define_variable(getSymbol(var), val, *env);
+  if(new_env != NULL) {
+    /* mutate the env */
+    *env = new_env;
 
-  list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, Atom, "ok");
-  
-  // TODO: what can we free here?
-
-  return ret;
+    list *ret = malloc(sizeof(list));
+    init_list(ret, NULL, Symbol,intern("ok", hashtable));
+    return ret;
+  } else {
+    return NULL;
+  }
 }
 
 list *eval_assignment(list *exp, list **env) {
   list *var = definition_variable(exp);
   list *val = eval(definition_value(exp), env);
 
-  *env = set_variable(var->kindData.atomData, val, *env);
+  *env = set_variable(var->data.symbolData, val, *env);
 
   list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, Atom, "ok");
+  init_list(ret, NULL, Symbol, intern("ok", hashtable));
   return ret;
 }
 
@@ -124,7 +136,7 @@ list *eval_appl(list *exp, list **env) {
   /* eval the operands */
   list *opands = operands(exp);
 
-  list *opands_data = opands->kindData.listData;
+  list *opands_data = getList(opands);
   free(opands);
   list *ev_opands = NULL;
 
@@ -143,7 +155,7 @@ list *eval_appl(list *exp, list **env) {
   }
 
   /* apply the operator to the operands */
-  return apply(ev_op->kindData.procData, ev_opands);
+  return apply(getProc(ev_op), ev_opands);
 }
 
 list *eval_if(list *exp, list **env) {
@@ -173,11 +185,11 @@ list *eval_sequence(list *exps, list **env) {
 }
 
 list *eval_lambda(list *exp, list **env) {
-  proc *lambda = malloc(sizeof(proc));
+  procedure *lambda = malloc(sizeof(procedure));
   list *params = lambda_params(exp);
   list *body = lambda_body(exp);
-  init_proc(lambda, params->kindData.listData, body->kindData.listData, *env, NULL);
+  init_proc(lambda, params->data.listData, body->data.listData, *env, NULL);
   list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, Proc, lambda);
+  init_list(ret, NULL, Procedure, lambda);
   return ret;
 }

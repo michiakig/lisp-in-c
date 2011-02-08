@@ -11,23 +11,32 @@
 #include "print.h"
 
 list *make_primitive(list* (*f) (list*)) {
-  proc *p = malloc(sizeof(proc));
+  procedure *p = malloc(sizeof(procedure));
   init_proc(p, NULL, NULL, NULL, f);
   list *l = malloc(sizeof(list));
-  init_list(l, NULL, Proc, p);
+  init_list(l, NULL, Procedure, p);
   return l;
 }
 
-list *init_global() {
+list *init_global(struct nlist *hashtable[]) {
   list *env = NULL;
-  env = define_variable("+", make_primitive(&primitive_add), env);
-  env = define_variable("*", make_primitive(&primitive_multiply), env);
-  env = define_variable("-", make_primitive(&primitive_subtract), env);
-  env = define_variable("/", make_primitive(&primitive_divide), env);
+  
+  symbol *plus = intern("+", hashtable);
+  symbol *asterisk = intern("*", hashtable);
+  symbol *minus = intern("-", hashtable);
+  symbol *fslash = intern("/", hashtable);
+  symbol *lt = intern("<", hashtable);
+  symbol *gt = intern(">", hashtable);
+  symbol *equals = intern("=", hashtable);
 
-  env = define_variable("<", make_primitive(&primitive_lt), env);
-  env = define_variable(">", make_primitive(&primitive_gt), env);
-  env = define_variable("=", make_primitive(&primitive_eq), env);
+  env = define_variable(plus, make_primitive(&primitive_add), env);
+  env = define_variable(asterisk, make_primitive(&primitive_multiply), env);
+  env = define_variable(minus, make_primitive(&primitive_subtract), env);
+  env = define_variable(fslash, make_primitive(&primitive_divide), env);
+
+  env = define_variable(lt, make_primitive(&primitive_lt), env);
+  env = define_variable(gt, make_primitive(&primitive_gt), env);
+  env = define_variable(equals, make_primitive(&primitive_eq), env);
 
   return env;
 }
@@ -38,47 +47,44 @@ list *init_global() {
  * and value is a list*
  */
 
-bind *lookup_variable_binding(char *variable, list *env) {
+binding *lookup_variable_binding(symbol *var, list *env) {
   if(env == NULL) {
     return NULL;
   } else {
-    //    print_env(env);
-    //    printf("\n");
-
-    bind *binding;
-    for(list *frame = env->kindData.listData; frame != NULL; frame = frame->next) {
-      binding = frame->kindData.bindData;
-      if(strcmp(variable, binding->name) == 0)
-        return binding;
+    binding *bind;
+    for(list *frame = env->data.listData; frame != NULL; frame = frame->next) {
+      bind = frame->data.bindData;
+      if(var == bind->name) // just compare symbol pointers
+        return bind;
     }
-    return lookup_variable_binding(variable, env->next);
+    return lookup_variable_binding(var, env->next);
   }
 }
 
-list *lookup_variable_value(char *variable, list *env) {
-  bind *binding = lookup_variable_binding(variable, env);
-  if(binding == NULL) {
-    printf("ERROR undefined variable: %s\n", variable);
+list *lookup_variable_value(symbol *var, list *env) {
+  binding *bind = lookup_variable_binding(var, env);
+  if(bind == NULL) {
+    printf("ERROR undefined variable: %s\n", var->name);
     return NULL;
   } else {
-    return binding->value;
+    return bind->value;
   }
 }
 
-list *define_variable(char *var, list *value, list *env) {
-  bind *binding = lookup_variable_binding(var, env);
-  if(binding != NULL) {
-    printf("WARNING variable already defined: %s\n", var);
+list *define_variable(symbol *var, list *value, list *env) {
+  binding *bind = lookup_variable_binding(var, env);
+  if(bind != NULL) {
+    printf("WARNING variable already defined: %s\n", var->name);
   }
 
   /* allocate a new binding*/
-  binding = malloc(sizeof(bind));
-  binding->name = var;
-  binding->value = value;
+  bind = malloc(sizeof(binding));
+  bind->name = var;
+  bind->value = value;
 
   /* allocate a new node to be added to the frame */
   list *node = malloc(sizeof(list));
-  init_list(node, NULL, Bind, binding);
+  init_list(node, NULL, Binding, bind);
 
   /* get the frame, allocating a new env if needed */
   list *frame = NULL;
@@ -86,7 +92,7 @@ list *define_variable(char *var, list *value, list *env) {
     env = malloc(sizeof(list));
     init_list(env, NULL, List, NULL);
   } else {
-    frame = env->kindData.listData;
+    frame = env->data.listData;
   }
 
   /* if the env was NULL or the env was empty, set frame to the new node */
@@ -95,38 +101,30 @@ list *define_variable(char *var, list *value, list *env) {
   else /* else cons the node onto the frame */
     frame = cons(node, frame);
 
-  env->kindData.listData = frame;
+  env->data.listData = frame;
   return env;
 }
 
-list *set_variable(char *var, list *value, list *env) {
-  bind *binding = lookup_variable_binding(var, env);
-  if(binding == NULL) {
-    printf("ERROR undefined variable: %s\n", var);
+list *set_variable(symbol *var, list *value, list *env) {
+  binding *bind = lookup_variable_binding(var, env);
+  if(bind == NULL) {
+    printf("ERROR undefined variable: %s\n", var->name);
     return NULL;
   }
 
-  binding->value = value; // TODO: memory
+  bind->value = value; // TODO: fix this memory leak!
   return env;
 }
 
 list *extend_environment(list *vars, list *vals, list *env) {
-//  printf("vars: ");
-//  print_sexp(vars);
-//  printf("\n");
-//
-//  printf("vals: ");
-//  print_sexp(vals);
-//  printf("\n");
-
   list *frame = NULL;
   list *r, *l;
   for(r = vars, l = vals; r != NULL && l != NULL; r = r->next, l = l->next) {
-    bind *binding = malloc(sizeof(bind));
-    binding->name = r->kindData.atomData;
-    binding->value = l->kindData.listData;
+    binding *bind = malloc(sizeof(bind));
+    bind->name = getSymbol(r);
+    bind->value = getList(l);
     list *frame_node = malloc(sizeof(list));
-    init_list(frame_node, NULL, Bind, binding);
+    init_list(frame_node, NULL, Binding, bind);
     frame = cons(frame_node, frame);
   }
 

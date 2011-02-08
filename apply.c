@@ -11,7 +11,9 @@
 #include "env.h"
 #include "print.h"
 
-void init_proc(proc *p, list *params, list *body,
+extern struct nlist *hashtable[];
+
+void init_proc(procedure *p, list *params, list *body,
                list *env, list* (*fn) (list *argl)) {
   p->params = params;
   p->body = body;
@@ -31,36 +33,36 @@ int eq(double a1, double a2) { return a1 == a2; }
 
 /* Fold (left) across an argument list, applying one of the numeric wrappers above */
 list *numeric_primitive(list *argl, double (*f) (double, double)) {
-  char *s = argl->kindData.listData->kindData.atomData;
+  char *s = argl->data.listData->data.symbolData->name;
   double result = atof(s);
   double arg;
   for(list *a = argl->next; a != NULL; a = a->next) {
-    s = a->kindData.listData->kindData.atomData;
+    s = a->data.listData->data.symbolData->name;
     arg = atof(s);
     result = f(result, arg);
   }
   s = malloc(sizeof(char)*100); /* TODO: calculate the num digits */
   sprintf(s, "%f", result);
   list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, Atom, s);
+  init_list(ret, NULL, Symbol, intern(s, hashtable));
   return ret;
 }
 
 list *compare_primitive(list *argl, int (*f) (double, double)) {
-  char *s = argl->kindData.listData->kindData.atomData;
+  char *s = argl->data.listData->data.symbolData->name;
   double arg1 = atof(s);
   double arg2;
   list *ret = malloc(sizeof(list));
   for(list *a = argl->next; a != NULL; a = a->next) {
-    s = a->kindData.listData->kindData.atomData;
+    s = a->data.listData->data.symbolData->name;
     arg2 = atof(s);
     if(!f(arg1, arg2)) {
-      init_list(ret, NULL, Atom, "#f");
+      init_list(ret, NULL, Symbol, intern("#f", hashtable));
       return ret;
     }
     arg1 = arg2;
   }
-  init_list(ret, NULL, Atom, "#t");
+    init_list(ret, NULL, Symbol, intern("#t", hashtable));
   return ret;
 }
 
@@ -74,18 +76,11 @@ list *primitive_lt(list *argl) { return compare_primitive(argl, &lt); }
 list *primitive_gt(list *argl) { return compare_primitive(argl, &gt); }
 list *primitive_eq(list *argl) { return compare_primitive(argl, &eq); }
 
-list *apply(proc *p, list *argl) {
+list *apply(procedure *p, list *argl) {
   if(p->fn != NULL) { // primitive procedure
     return (*(p->fn))(argl);
   } else {
-    //        print_env(p->env);
-    //        printf("");
-    //        printf("\n");
-    //        fflush(stdin);
     list *extended_env = extend_environment(p->params, argl, p->env);
-    //   print_env(extended_env);
-    //    printf("\n");
-    //    fflush(stdin);
     return eval_sequence(p->body, &extended_env);
   }
 }

@@ -8,11 +8,12 @@
 
 #include "read.h"
 
+#include "hasht.h"
+
 #define MAX_LINE 1000
 
 /* Parses an s-expression (from read_sexp) into a linked-list (actually a tree) */
-list *parse_sexp(list *lines) {
-  char *buf;
+list *parse_sexp(list *lines, struct nlist *hashtable[]) {
   char *brk;
   int len;
 
@@ -24,16 +25,12 @@ list *parse_sexp(list *lines) {
   list *hcontainer; // containers for pushing unfinished lists on the stack
   list *lcontainer;
 
-
-  list *old_head;
-  list *old_last;
-
   list *ret = NULL;
 
   list *line = lines; // current line
-  if(line->type != Atom)
+  if(line->type != String)
     return NULL;
-  char *ch = (char*)line->kindData.atomData; // current char
+  char *ch = (char*)line->data.stringData; // current char
 
   while(ch != NULL) {
 
@@ -65,8 +62,8 @@ list *parse_sexp(list *lines) {
         list *n = malloc(sizeof(list));
         init_list(n, NULL, List, head);
         // append the just finished list to the outer, unfinished list
-        last = append(n, lcontainer->kindData.listData);
-        head = hcontainer->kindData.listData;
+        last = append(n, lcontainer->data.listData);
+        head = hcontainer->data.listData;
         free(hcontainer);
         free(lcontainer);
           
@@ -74,7 +71,7 @@ list *parse_sexp(list *lines) {
 
       if(head == NULL) { // empty list
         head = malloc(sizeof(list));
-        init_list(head, NULL, Atom, NULL);
+        init_list(head, NULL, Symbol, NULL);
         last = head;
         init_list(ret, NULL, List, head);
       }
@@ -84,36 +81,40 @@ list *parse_sexp(list *lines) {
                              // node in the list of lines
       line = line->next;
       if(line != NULL)
-        ch = line->kindData.atomData;
+        ch = line->data.stringData;
       else
         ch = NULL;
     } else { // get the token beginning with char at ch
       brk = strpbrk(ch, "() \n\t");
       if(brk != NULL) {
         len = brk - ch;
-        buf = (char*)malloc(sizeof(char)*len+1);
+        char tmp = *brk;
+        *brk = '\0';
+        symbol *sym = intern(ch, hashtable);
+        *brk = tmp;
         
-        int i = 0;
-        for(i = 0; i < len; i++)
-          buf[i] = *(ch+i);
-        buf[i] = '\0';
+//        buf = (char*)malloc(sizeof(char)*len+1);
+//        int i = 0;
+//        for(i = 0; i < len; i++)
+//          buf[i] = *(ch+i);
+//        buf[i] = '\0';
 
         if(last == NULL) { // this is the first element of the list
           if(ret == NULL) { // and the only item, ie haven't seen an open paren
             ret = malloc(sizeof(list));
-            init_list(ret, NULL, Atom, buf);
+            init_list(ret, NULL, Symbol, sym);
             return ret;
           } else { // not the first element in the list
             last = (list*)malloc(sizeof(list));
-            init_list(last, NULL, Atom, buf);
+            init_list(last, NULL, Symbol, sym);
             head = last;
-            if(ret->kindData.listData == NULL) { // ret hasn't been used yet
+            if(ret->data.listData == NULL) { // ret hasn't been used yet
               init_list(ret, NULL, List, head);
             }
           }
         } else { // adding an new item to the list
           list *n = malloc(sizeof(list));
-          init_list(n, NULL, Atom, buf);
+          init_list(n, NULL, Symbol, sym);
           last = append(n, last);
         }
         ch = brk;
@@ -141,7 +142,7 @@ list *read_sexp(FILE *f) {
         (count += count_parens(buf, MAX_LINE)) > 0) {
 
     n = malloc(sizeof(list));
-    init_list(n, NULL, Atom, buf);
+    init_list(n, NULL, String, buf);
 
     if(head == NULL) {
       head = n;
@@ -158,7 +159,7 @@ list *read_sexp(FILE *f) {
 
   if(buf[0] != '\n') {
     n = malloc(sizeof(list));
-    init_list(n, NULL, Atom, buf);
+    init_list(n, NULL, String, buf);
     if(head == NULL) {
       head = n;
     } else {

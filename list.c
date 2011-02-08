@@ -4,17 +4,21 @@
 #include "types.h"
 #include "list.h"
 
+#include <assert.h>
+
 void init_list(list *node, list *next, enum kind type, void *data) {
   node->next = next;  
   node->type = type;
-  if(type == Atom)
-    node->kindData.atomData = (char*)data;
+  if(type == Symbol)
+    node->data.symbolData = (symbol*)data;
   else if(type == List)
-    node->kindData.listData = (list*)data;
-  else if(type == Proc)
-    node->kindData.procData = (proc*)data;
-  else if(type == Bind)
-    node->kindData.bindData = (bind*)data;
+    node->data.listData = (list*)data;
+  else if(type == Procedure)
+    node->data.procData = (procedure*)data;
+  else if(type == Binding)
+    node->data.bindData = (binding*)data;
+  else if(type == String)
+    node->data.stringData = (char*)data;
 }
 
 /* Append new node to the front of the list, returns new front.
@@ -103,17 +107,20 @@ list *pop(list **pstack) {
 //}
 //
 
-/* recursively frees a list, but only frees ATOM data,
-   so could would leak if PROCs were in the list */
+/* recursively frees a list, but only frees Symbol data,
+   so could would leak if Procs were in the list */
 void simple_rfree(list *l) {
   list *n = l;
-  list *tmp;
+  list *tmp = NULL;
   while(n != NULL) {
-    if(n->type == Atom)
-      free(n->kindData.atomData);
+//    if(n->type == Symbol)
+//      free(n->data.symbolData);
+//    else
+    if(n->type == String)
+      free(n->data.stringData);
     else if(n->type == List)
-      if(n->kindData.listData != NULL)
-        simple_rfree(n->kindData.listData);
+      if(n->data.listData != NULL)
+        simple_rfree(n->data.listData);
 
     tmp = n->next;
     free(n);
@@ -134,7 +141,28 @@ list *shallow_node_copy(list *orig) {
   list* copy = malloc(sizeof(list));
   copy->next = NULL;
   copy->type = orig->type;
-  copy->kindData = orig->kindData;
+  copy->data = orig->data;
 
   return copy;
+}
+
+
+symbol *getSymbol(list *l) {
+  assert(l->type == Symbol);
+  return l->data.symbolData;
+}
+
+list *getList(list *l) {
+  assert(l->type == List);
+  return l->data.listData;
+}
+
+procedure *getProc(list *l) {
+  assert(l->type == Procedure);
+  return l->data.procData;
+}
+
+binding *getBind(list *l) {
+  assert(l->type == Binding);
+  return l->data.bindData;
 }

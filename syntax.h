@@ -3,11 +3,14 @@
 
 #include "types.h"
 #include "list.h"
+#include "hasht.h"
+
+void init_hashtable(struct nlist *hashtable[], int len);
 
 int self_evaluating(list *exp);
 int variable(list *exp);
 int quoted(list *exp);
-int tagged_list(list *exp, const char *tag);
+int tagged_list(list *exp, const symbol* tag);
 int assignment(list *exp);
 int definition(list *exp);
 int lambda(list *exp);
@@ -15,6 +18,7 @@ int if_exp(list *exp);
 int begin(list *exp);
 
 list *text_of_quotation(list *exp);
+
 list *definition_value(list *exp);
 list *definition_variable(list *exp);
 

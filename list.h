@@ -27,4 +27,9 @@ void simple_rfree(list *l);
 
 list *shallow_node_copy(list *orig);
 
+symbol *getSymbol(list *l);
+list *getList(list *l);
+procedure *getProc(list *l);
+binding *getBind(list *l);
+
 #endif

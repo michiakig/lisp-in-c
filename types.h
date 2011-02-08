@@ -1,29 +1,34 @@
 #ifndef __types__
 #define __types__ 1
 
-enum kind { Atom, List, Proc, Bind };
+enum kind { Symbol, List, Procedure, Binding, String };
 
 typedef struct list {
   struct list *next;
   enum kind type;
   union {
     struct list *listData;
-    char *atomData;
-    struct proc *procData;
-    struct bind *bindData;
-  } kindData;
+    struct symbol *symbolData;
+    struct procedure *procData;
+    struct binding *bindData;
+    char *stringData;
+  } data;
 } list;
 
-typedef struct proc {
+typedef struct procedure {
   struct list *params;
   struct list *body;
   struct list *env;
   struct list* (*fn) (list *argl);
-} proc;
+} procedure;
 
-typedef struct bind {
+typedef struct symbol {
   char *name;
+} symbol;
+
+typedef struct binding {
+  symbol *name;
   struct list *value;
-} bind;
+} binding;
 
 #endif
