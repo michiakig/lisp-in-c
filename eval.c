@@ -25,7 +25,7 @@ struct nlist *hashtable[HASHSIZE];
 
 int truthy(list *exp) {
   if(exp->type == Symbol)
-    return exp->data.symbolData == intern("#f", hashtable);
+    return exp->data.symbolData != intern("#f", hashtable);
   else
     return 1;
 }
