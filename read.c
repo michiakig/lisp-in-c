@@ -165,6 +165,8 @@ list *read_sexp(FILE *f) {
     } else {
       last = append(n, last);
     }
+  } else {
+    free(buf);
   }
 
   return head;

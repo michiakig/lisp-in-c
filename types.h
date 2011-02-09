@@ -1,7 +1,7 @@
 #ifndef __types__
 #define __types__ 1
 
-enum kind { Symbol, List, Procedure, Binding, String };
+enum kind { Symbol, List, Procedure, Binding, String, Cons };
 
 typedef struct list {
   struct list *next;
@@ -12,6 +12,7 @@ typedef struct list {
     struct procedure *procData;
     struct binding *bindData;
     char *stringData;
+    int *consData;
   } data;
 } list;
 

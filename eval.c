@@ -53,21 +53,29 @@ int main(int argc, char **argv) {
       simple_rfree(input);
 
       list *val = eval(exp, &global_env);
-      //      simple_rfree(exp);
+      simple_rfree(exp); /* free the whole expression -- anything
+                            that needs to be kept after evaluation
+                            (lambda body and params) is copied during
+                            eval process */
 
       if(val != NULL) {
         printf("%s\n", val_prompt);
         print_exp(val);
-        //        simple_rfree(val);
+        
+        free(val); /* only free the container list which was passed
+                      back from eval */
         printf("\n");
+      } else {
+        printf("error? val was null\n");
       }
     }
   }
+  simple_rfree(global_env);
   free_hasht(hashtable);
 }
 
 list *eval(list *exp, list **env) {
-  list *ret = (list *)malloc(sizeof(list));
+  list *ret;
 
   if(self_evaluating(exp)) {
     ret = exp;
@@ -102,9 +110,13 @@ list *eval(list *exp, list **env) {
 
 list *eval_define(list *exp, list **env) {
   list *var = definition_variable(exp);
-  list *val = eval(definition_value(exp), env);
+  list *dfn_val = definition_value(exp);
+  list *val = eval(dfn_val, env);
+  if(val != dfn_val)
+    free(dfn_val);
 
   list *new_env = define_variable(getSymbol(var), val, *env);
+  free(var);
   if(new_env != NULL) {
     /* mutate the env */
     *env = new_env;
@@ -121,7 +133,8 @@ list *eval_assignment(list *exp, list **env) {
   list *var = definition_variable(exp);
   list *val = eval(definition_value(exp), env);
 
-  *env = set_variable(var->data.symbolData, val, *env);
+  *env = set_variable(getSymbol(var), val, *env);
+  free(var);
 
   list *ret = malloc(sizeof(list));
   init_list(ret, NULL, Symbol, intern("ok", hashtable));
@@ -132,10 +145,10 @@ list *eval_appl(list *exp, list **env) {
   /* eval the operator */
   list *op = operator(exp);
   list *ev_op = eval(op, env);
+  free(op);
 
   /* eval the operands */
   list *opands = operands(exp);
-
   list *opands_data = getList(opands);
   free(opands);
   list *ev_opands = NULL;
@@ -144,6 +157,8 @@ list *eval_appl(list *exp, list **env) {
 
     list *copy = shallow_node_copy(n);
     list *ev_opand = eval(copy, env);
+    if(copy != ev_opand)
+      free(copy);
 
     list *arg = malloc(sizeof(list));
     init_list(arg, NULL, List, ev_opand);    
@@ -155,20 +170,23 @@ list *eval_appl(list *exp, list **env) {
   }
 
   /* apply the operator to the operands */
-  return apply(getProc(ev_op), ev_opands);
+  list *ret = apply(getProc(ev_op), ev_opands);
+  simple_rfree(ev_opands);
+  free(ev_op);
+
+  return ret;
 }
 
 list *eval_if(list *exp, list **env) {
   list *pred = if_predicate(exp);
   list *consq = if_consequent(exp);
   list *alt = if_alternative(exp);
-
   list *ev_pred = eval(pred, env);
-
-  if(truthy(ev_pred))
+  if(truthy(ev_pred)) {
     return eval(consq, env);
-  else
+  } else {
     return eval(alt, env);
+  }
 }
 
 list *eval_sequence(list *exps, list **env) {

@@ -11,6 +11,8 @@
 #include "env.h"
 #include "print.h"
 
+#include "storage.h"
+
 extern struct nlist *hashtable[];
 
 void init_proc(procedure *p, list *params, list *body,
@@ -19,6 +21,26 @@ void init_proc(procedure *p, list *params, list *body,
   p->body = body;
   p->env = env;
   p->fn = fn;
+}
+
+list *primitive_cons(list *argl) {
+  list *a = argl->data.listData;
+  list *d = argl->next->data.listData;
+  int *i = malloc(sizeof(int));
+  *i = cons(a, d);
+  list *ret = malloc(sizeof(list));
+  init_list(ret, NULL, Cons, i);
+  return ret;
+}
+
+list *primitive_car(list *argl) {
+  list *o = argl->data.listData;
+  return car(*(o->data.consData));
+}
+
+list *primitive_cdr(list *argl) {
+  list *o = argl->data.listData;
+  return cdr(*(o->data.consData));
 }
 
 /* Wrappers around built-in C arithmetic operators  */
@@ -45,6 +67,7 @@ list *numeric_primitive(list *argl, double (*f) (double, double)) {
   sprintf(s, "%f", result);
   list *ret = malloc(sizeof(list));
   init_list(ret, NULL, Symbol, intern(s, hashtable));
+  free(s);
   return ret;
 }
 

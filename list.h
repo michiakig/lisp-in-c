@@ -16,7 +16,7 @@
 
 void init_list(list *node, list *next, enum kind type, void *data);
 
-list *cons(list *new, list *old);
+list *prepend(list *new, list *old);
 list *insert(list *new, list *old);
 list *append(list *new, list *old);
 
@@ -26,6 +26,7 @@ list *pop(list **pstack);
 void simple_rfree(list *l);
 
 list *shallow_node_copy(list *orig);
+list *deep_list_copy(list *orig);
 
 symbol *getSymbol(list *l);
 list *getList(list *l);

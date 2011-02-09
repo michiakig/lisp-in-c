@@ -29,6 +29,10 @@ list *init_global(struct nlist *hashtable[]) {
   symbol *gt = intern(">", hashtable);
   symbol *equals = intern("=", hashtable);
 
+  symbol *cons = intern("cons", hashtable);
+  symbol *car = intern("car", hashtable);
+  symbol *cdr = intern("cdr", hashtable);
+
   env = define_variable(plus, make_primitive(&primitive_add), env);
   env = define_variable(asterisk, make_primitive(&primitive_multiply), env);
   env = define_variable(minus, make_primitive(&primitive_subtract), env);
@@ -38,8 +42,14 @@ list *init_global(struct nlist *hashtable[]) {
   env = define_variable(gt, make_primitive(&primitive_gt), env);
   env = define_variable(equals, make_primitive(&primitive_eq), env);
 
+  env = define_variable(cons, make_primitive(&primitive_cons), env);
+  env = define_variable(car, make_primitive(&primitive_car), env);
+  env = define_variable(cdr, make_primitive(&primitive_cdr), env);
+
   return env;
 }
+
+
 
 /*
  * An environment is a list of frames. A frame is a list of binds
@@ -67,7 +77,8 @@ list *lookup_variable_value(symbol *var, list *env) {
     printf("ERROR undefined variable: %s\n", var->name);
     return NULL;
   } else {
-    return bind->value;
+    list *ret = shallow_node_copy(bind->value);
+    return ret;
   }
 }
 
@@ -80,7 +91,7 @@ list *define_variable(symbol *var, list *value, list *env) {
   /* allocate a new binding*/
   bind = malloc(sizeof(binding));
   bind->name = var;
-  bind->value = value;
+  bind->value = shallow_node_copy(value);
 
   /* allocate a new node to be added to the frame */
   list *node = malloc(sizeof(list));
@@ -98,8 +109,8 @@ list *define_variable(symbol *var, list *value, list *env) {
   /* if the env was NULL or the env was empty, set frame to the new node */
   if(frame == NULL)
     frame = node;
-  else /* else cons the node onto the frame */
-    frame = cons(node, frame);
+  else /* else prepend the node onto the frame */
+    frame = prepend(node, frame);
 
   env->data.listData = frame;
   return env;
@@ -125,7 +136,7 @@ list *extend_environment(list *vars, list *vals, list *env) {
     bind->value = getList(l);
     list *frame_node = malloc(sizeof(list));
     init_list(frame_node, NULL, Binding, bind);
-    frame = cons(frame_node, frame);
+    frame = prepend(frame_node, frame);
   }
 
   if(r != NULL || l != NULL) {
@@ -136,5 +147,7 @@ list *extend_environment(list *vars, list *vals, list *env) {
   list *env_node = malloc(sizeof(list));
   init_list(env_node, NULL, List, frame);
 
-  return cons(env_node, env);
+  return prepend(env_node, env);
 }
+
+

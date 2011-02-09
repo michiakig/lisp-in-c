@@ -97,6 +97,7 @@ int tagged_list(list *exp, const symbol *tag) {
 /* TODO: doesn't handle (quote (foo bar)) */
 list *text_of_quotation(list *exp) {
   list *cdr = exp->data.listData->next;
+
   list *ret = malloc(sizeof(list));
   init_list(ret, NULL, Symbol, cdr->data.symbolData);
   return ret;
@@ -104,6 +105,7 @@ list *text_of_quotation(list *exp) {
 
 list *definition_variable(list *exp) {
   list *cdr = exp->data.listData->next;
+
   list *ret = malloc(sizeof(list));
   init_list(ret, NULL, Symbol, cdr->data.symbolData);
   return ret;
@@ -111,6 +113,7 @@ list *definition_variable(list *exp) {
 
 list *definition_value(list *exp) {
   list *cddr = exp->data.listData->next->next;
+
   list *ret = malloc(sizeof(list));
   if(cddr->type == Symbol) { // value could be a symbol or a list
     init_list(ret, NULL, Symbol, cddr->data.symbolData);
@@ -122,8 +125,8 @@ list *definition_value(list *exp) {
 
 list *operator(list *exp) {
   list *car = exp->data.listData;
-  list *ret = malloc(sizeof(list));
 
+  list *ret = malloc(sizeof(list));
   if(car->type == Symbol)
     init_list(ret, NULL, Symbol, car->data.symbolData);
   else if(car->type == List)
@@ -133,6 +136,7 @@ list *operator(list *exp) {
 
 list *operands(list *exp) {
   list *cdr = exp->data.listData->next;
+
   list *ret = malloc(sizeof(list));
   init_list(ret, NULL, List, cdr);
   return ret;  
@@ -140,40 +144,45 @@ list *operands(list *exp) {
 
 list *if_predicate(list *exp) {
   list *l = exp->data.listData;
-  list *pred = shallow_node_copy(l->next);
+  list *pred = l->next;
   return pred;
 }
 
 list *if_consequent(list *exp) {
   list *l = exp->data.listData;
-  list *consq = shallow_node_copy(l->next->next);
+  list *consq = l->next->next;
   return consq;
 }
 
 list *if_alternative(list *exp) {
   list *l = exp->data.listData;
-  list *alt = shallow_node_copy(l->next->next->next);
+  list *alt = l->next->next->next;
   return alt;
 }
 
 list *begin_sequence(list *exp) {
   list *l = exp->data.listData;
-  return l->next;
+  list *cdr = l->next;
+
+  list *ret = malloc(sizeof(list));
+  init_list(ret, NULL, List, cdr);
+  return ret;
 }
 
 list *lambda_params(list *exp) {
   list *l = exp->data.listData;
   list *cdr = l->next;
-  if(cdr->type != List)
-    printf("ERROR!! malformed lambda expression: params is not a list??\n");
 
-  return shallow_node_copy(cdr);
+  list *ret = malloc(sizeof(list));
+  init_list(ret, NULL, List, deep_list_copy(getList(cdr)));
+  return ret;
 }
 
 list *lambda_body(list *exp) {
   list *l = exp->data.listData;
   list *cddr = l->next->next;
+
   list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, List, cddr);
+  init_list(ret, NULL, List, deep_list_copy(cddr));
   return ret;
 }

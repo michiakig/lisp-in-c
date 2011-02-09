@@ -1,18 +1,17 @@
 #include <stdio.h>
 #include "types.h"
 #include "hasht.h"
+#include "storage.h"
 
 void print_data(list *node) {
-  if(node->type == Symbol) {
+  if(node->type == Symbol)
     printf("%s", node->data.symbolData->name);
-  }
-
-//else if(n->type == Procedure) { // TODO fix procedure type to have some name
-//                               // and print that
-//    printf("<proc>");
-//  } else if(n->type == Bind) { // TODO print the actual binding name, value
-//    printf("<bind>");
-//  }
+  else if(node->type == Procedure) // TODO fix procedure type to have some name
+    printf("<proc>");
+  else if(node->type == Cons)
+    print_cons(node);
+  else
+    printf("UNKNOWN");
 }
 
 /* Prints a list in a box-and-pointer style */
@@ -50,17 +49,13 @@ void print_sexp(list *head) {
 }
 
 void print_exp(list *exp) {
-  if(exp != NULL) {
-    if(exp->type == Symbol) {
-      printf("%s", exp->data.symbolData->name);
-    } else if(exp->type == Procedure) {
-      printf("<proc>");
-    } else if(exp->type == List) {
+  if(exp != NULL)
+     if(exp->type == List)
       print_sexp(exp->data.listData);
-    } else if(exp->type == String) {
-      printf("\"%s\"", exp->data.stringData);
-    }
-  }
+    else
+       print_data(exp);
+  else
+    printf("NULL");
 }
 
 void print_frame(list *frame) {

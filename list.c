@@ -19,11 +19,13 @@ void init_list(list *node, list *next, enum kind type, void *data) {
     node->data.bindData = (binding*)data;
   else if(type == String)
     node->data.stringData = (char*)data;
+  else if(type == Cons)
+    node->data.consData = (int*)data;
 }
 
-/* Append new node to the front of the list, returns new front.
+/* Prepend new node to the front of the list, returns new front.
    Can be called with NULL old, returns NULL if new is NULL. */
-list *cons(list *new, list *old) {
+list *prepend(list *new, list *old) {
   if(new == NULL)
     return NULL;
 
@@ -107,8 +109,6 @@ list *pop(list **pstack) {
 //}
 //
 
-/* recursively frees a list, but only frees Symbol data,
-   so could would leak if Procs were in the list */
 void simple_rfree(list *l) {
   list *n = l;
   list *tmp = NULL;
@@ -118,7 +118,10 @@ void simple_rfree(list *l) {
 //    else
     if(n->type == String)
       free(n->data.stringData);
-    else if(n->type == List)
+    else if(n->type == Binding) {
+      simple_rfree(n->data.bindData->value);
+      free(n->data.bindData);
+    } else if(n->type == List)
       if(n->data.listData != NULL)
         simple_rfree(n->data.listData);
 
@@ -142,6 +145,29 @@ list *shallow_node_copy(list *orig) {
   copy->next = NULL;
   copy->type = orig->type;
   copy->data = orig->data;
+
+  return copy;
+}
+
+list *deep_list_copy(list *orig) {
+  list *copy = NULL; /* head of the copy */
+  list *last = NULL; /* last node in the copy */
+  list *new;
+  list *n;
+  for(n = orig; n != NULL; n = n->next) {
+    if(copy == NULL) {
+      copy = malloc(sizeof(list));
+      last = copy;
+    } else {
+      new = malloc(sizeof(list));
+      last = append(new, last);
+    }
+    if(n->type == Symbol) {
+      init_list(last, NULL, Symbol, n->data.symbolData);
+    } else if(n->type == List) {
+      init_list(last, NULL, List, deep_list_copy(n->data.listData));
+    }
+  }
 
   return copy;
 }

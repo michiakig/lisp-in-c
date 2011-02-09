@@ -16,6 +16,10 @@ list *primitive_lt(list *argl);
 list *primitive_gt(list *argl);
 list *primitive_eq(list *argl);
 
+list *primitive_cdr(list *argl);
+list *primitive_car(list *argl);
+list *primitive_cons(list *argl);
+
 list *apply(procedure *p, list *argl);
 
 #endif
