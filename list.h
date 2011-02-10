@@ -15,6 +15,7 @@
 */
 
 void init_list(list *node, list *next, enum kind type, void *data);
+void print_boxp(list *head);
 
 list *prepend(list *new, list *old);
 list *insert(list *new, list *old);

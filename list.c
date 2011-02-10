@@ -1,10 +1,26 @@
 #include <stdlib.h> /* malloc */
 #include <stdio.h> /* printf */
+#include <assert.h>
 
 #include "types.h"
 #include "list.h"
 
-#include <assert.h>
+/* Prints a list in a box-and-pointer style */
+void print_boxp(list *head) {
+  list *n = head;
+  while(n != NULL) {
+    printf("[");
+    if(n->type == Symbol)
+      printf("%s", n->data.symbolData->name);
+    else if(n->type == List)
+      print_boxp(n->data.listData);
+    printf("]");
+
+    if(n->next != NULL)
+      printf("->");
+    n = n->next;
+  }
+}
 
 void init_list(list *node, list *next, enum kind type, void *data) {
   node->next = next;  
@@ -19,8 +35,6 @@ void init_list(list *node, list *next, enum kind type, void *data) {
     node->data.bindData = (binding*)data;
   else if(type == String)
     node->data.stringData = (char*)data;
-  else if(type == Cons)
-    node->data.consData = (int*)data;
 }
 
 /* Prepend new node to the front of the list, returns new front.
@@ -86,36 +100,10 @@ list *pop(list **pstack) {
   return n;
 }
 
-///* Simple length of the list (nested lists count for 1) */
-//int length(list *head) {
-//  int len=0;
-//  for(list *n = head; n!=NULL; n=n->next)
-//    len++;
-//  return len;
-//}
-//
-///* Recursively counts the length of the list and all sublists */
-//int length_r(list *head) {
-//  int len=0;
-//  for(list *n = head; n != NULL; n = n->next) {
-//    if(n->type != CONS) {
-//      len++;
-//    } else {
-//      if(n->data != NULL)
-//        len+=length_r(n->data);
-//    }
-//  }
-//  return len;
-//}
-//
-
 void simple_rfree(list *l) {
   list *n = l;
   list *tmp = NULL;
   while(n != NULL) {
-//    if(n->type == Symbol)
-//      free(n->data.symbolData);
-//    else
     if(n->type == String)
       free(n->data.stringData);
     else if(n->type == Binding) {
@@ -133,9 +121,10 @@ void simple_rfree(list *l) {
 
 /* Calls the procedure "fn" for each node in the list */
 void foreach(list *head, void(*fn)(list*)) {
+  list *n;
   if(head == NULL)
     return;
-  for(list *n = head; n != NULL; n = n->next) {
+  for(n = head; n != NULL; n = n->next) {
     fn(n);
   }
 }
@@ -191,4 +180,9 @@ procedure *getProc(list *l) {
 binding *getBind(list *l) {
   assert(l->type == Binding);
   return l->data.bindData;
+}
+
+int getCons(list *l) {
+  assert(l->type == Cons);
+  return l->data.consData;
 }
