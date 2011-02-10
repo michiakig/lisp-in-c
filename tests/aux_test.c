@@ -13,26 +13,26 @@ void test_stack(int len, char **data) {
   stack = malloc(sizeof(*stack));
   stack->next = NULL;
   stack->data = *data;
-  for_each(stack, &print_node);
+  auxfor_each(stack, &auxprint_node);
   printf("\n");
   for(i = 1; i < len; i++) {
     n = malloc(sizeof(*n));
     n->next = NULL;
     n->data = *(data+i);
-    push(n, &stack);
+    auxpush(n, &stack);
 
-    for_each(stack, &print_node);
+    auxfor_each(stack, &auxprint_node);
     printf("\n");
   }
   
   for(i = 0; i < len; i++) {
-    n = pop(&stack);
+    n = auxpop(&stack);
     printf("%s\n", (char*)n->data);
     free(n);
   }
 }
 
-void test_append(int len, char **data) {
+void test_auxappend(int len, char **data) {
   struct node *lst = NULL;
   struct node *n = NULL;
   int i;
@@ -44,12 +44,12 @@ void test_append(int len, char **data) {
     n = malloc(sizeof(*n));
     n->next = NULL;
     n->data = *(data+i);
-    append(n, lst);
+    auxappend(n, lst);
 
-    for_each(lst, &print_node);
+    auxfor_each(lst, &auxprint_node);
     printf("\n");
   }
-  for_each(lst, &free_node);
+  auxfor_each(lst, &auxfree_node);
 }
 
 int main(int argc, char **argv) {
@@ -60,6 +60,6 @@ int main(int argc, char **argv) {
   }
 
   test_stack(argc-1, argv+1);
-  test_append(argc-1, argv+1);
+  test_auxappend(argc-1, argv+1);
 }
 

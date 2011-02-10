@@ -1,10 +1,10 @@
 
-struct node *append(struct node *new, struct node *lst);
-void push(struct node *new, struct node **stack);
-struct node *pop(struct node **stack);
-void for_each(struct node *n, void (*fn) (struct node*));
-void print_node(struct node *n);
-void free_node(struct node *n);
+struct node *auxappend(struct node *new, struct node *lst);
+void auxpush(struct node *new, struct node **stack);
+struct node *auxpop(struct node **stack);
+void auxfor_each(struct node *n, void (*fn) (struct node*));
+void auxprint_node(struct node *n);
+void auxfree_node(struct node *n);
 
 struct node {
   struct node *next;
