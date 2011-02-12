@@ -6,66 +6,44 @@
 #include "storage.h"
 #include "syntax.h"
 #include "env.h"
-
-object_t eval_define(object_t exp, object_t *env);
-object_t eval_assignment(object_t exp, object_t *env);
-
-/*
-#include "print.h"
-
+#include "types.h"
 #include "apply.h"
 
-list *eval_appl(list *exp, list **env);
-
-list *eval_if(list *exp, list **env);
-list *eval_sequence(list *exps, list **env);
-list *eval_lambda(list *exp, list **env);
-*/
-/*
-int truthy(list *exp) {
-  if(exp->type == Symbol)
-    return exp->data.symbolData != intern("#f", hashtable);
-  else
-    return 1;
-}
-*/
+object_t eval_define(object_t, object_t*);
+object_t eval_assignment(object_t, object_t*);
+object_t eval_appl(object_t, object_t*);
+object_t eval_if(object_t exp, object_t *env);
+object_t eval_sequence(object_t exps, object_t *env);
+object_t eval_lambda(object_t exp, object_t *env);
 
 object_t eval(object_t exp, object_t *env) {
-  object_t ret = exp;
-
   if(self_evaluating(exp)) {
-    ret = exp;
+    return exp;
 
   } else if(variable(exp)) {
-    ret = lookup_variable(exp, *env);
+    return lookup_variable(exp, *env);
 
   } else if(quoted(exp)) {
-    ret = text_of_quotation(exp);
+    return text_of_quotation(exp);
 
   } else if(assignment(exp)) {
-    ret = eval_assignment(exp, env);
+    return eval_assignment(exp, env);
 
   } else if(definition(exp)) {
-    ret = eval_define(exp, env);
+    return eval_define(exp, env);
 
   } else if(lambda(exp)) {
-    printf("lambda\n");
-    /*    ret = eval_lambda(exp, env); */
+    return eval_lambda(exp, env);
 
   } else if(if_exp(exp)) {
-    printf("if\n");
-    /*    ret = eval_if(exp, env); */
+    return eval_if(exp, env);
 
   } else if(begin(exp)) {
-    printf("begin\n");
-    /*    ret = eval_sequence(begin_sequence(exp), env); */
+    return eval_sequence(begin_sequence(exp), env);
 
-  } else { /* otherwise, assume it's an application */
-    printf("application\n");
-    /*    ret = eval_appl(exp, env); */
+  } else {
+    return eval_appl(exp, env);
   }
-
-  return ret;
 }
 
 object_t eval_define(object_t exp, object_t *env) {
@@ -83,74 +61,51 @@ object_t eval_assignment(object_t exp, object_t *env) {
   return obj_new_symbol("ok");
 }
 
-/*
-list *eval_appl(list *exp, list **env) {
+object_t eval_appl(object_t exp, object_t *env) {
+  object_t op = operator(exp);
 
-  list *op = operator(exp);
-  list *ev_op = eval(op, env);
-  free(op);
+  object_t ev_op = eval(op, env);
+  object_t opands = operands(exp);
+  object_t opand = car(opands);
+  object_t ev_opands = cons(eval(opand, env), NIL);
 
-
-  list *opands = operands(exp);
-  list *opands_data = getList(opands);
-  free(opands);
-  list *ev_opands = NULL;
-
-  for(list *n = opands_data; n != NULL; n = n->next) {
-
-    list *copy = shallow_node_copy(n);
-    list *ev_opand = eval(copy, env);
-    if(copy != ev_opand)
-      free(copy);
-
-    list *arg = malloc(sizeof(list));
-    init_list(arg, NULL, List, ev_opand);    
-    if(ev_opands == NULL) {definition_variabdefinition_value      ev_opands = arg;
-    } else {
-      append(arg, ev_opands);
-    }
+  opands = cdr(opands);
+  while(!nilp(opands)) {
+    storage_append(eval(car(opands), env), ev_opands);
+    opands = cdr(opands);
   }
 
-  list *ret = apply(getProc(ev_op), ev_opands);
-  simple_rfree(ev_opands);
-  free(ev_op);
-
-  return ret;
+  return apply(obj_getProcedure(ev_op), ev_opands);
 }
 
-list *eval_if(list *exp, list **env) {
-  list *pred = if_predicate(exp);
-  list *consq = if_consequent(exp);
-  list *alt = if_alternative(exp);
-  list *ev_pred = eval(pred, env);
-  if(truthy(ev_pred)) {
+int truthy(object_t exp) {
+  if(symbolp(exp))
+    return !symbolcmp(exp, obj_new_symbol("#f"));
+  else
+    return 1;
+}
+
+object_t eval_if(object_t exp, object_t *env) {
+  object_t pred = if_predicate(exp);
+  object_t consq = if_consequent(exp);
+  object_t alt = if_alternative(exp);
+  object_t ev_pred = eval(pred, env);
+  if(truthy(ev_pred))
     return eval(consq, env);
-  } else {
+  else
     return eval(alt, env);
+}
+
+object_t eval_sequence(object_t exps, object_t *env) {
+  while(!nilp(cdr(exps))) {
+    eval(car(exps), env);
+    exps = cdr(exps);
   }
+  return eval(car(exps), env);
 }
 
-list *eval_sequence(list *exps, list **env) {
-  list *n;
-
-  for(n = exps; n->next != NULL; n = n->next) {
-    list *copy = shallow_node_copy(n);
-    eval(copy, env);
-    free(copy);
-  }
-
-  list *ret = eval(n, env);
-  return ret;
+object_t eval_lambda(object_t exp, object_t *env) {
+  object_t params = lambda_params(exp);
+  object_t body = lambda_body(exp);
+  return obj_new_procedure(procedure_new(params, body, *env, NULL));
 }
-
-list *eval_lambda(list *exp, list **env) {
-  procedure *lambda = malloc(sizeof(procedure));
-  list *params = lambda_params(exp);
-  list *body = lambda_body(exp);
-  init_proc(lambda, params->data.listData, body->data.listData, *env, NULL);
-  list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, Procedure, lambda);
-  return ret;
-}
-
-*/

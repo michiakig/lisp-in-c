@@ -1,48 +1,43 @@
 #include <stdio.h>
+#include "types.h"
 #include "storage.h"
 #include "env.h"
+#include "apply.h"
 
-/*
-list *make_primitive(list* (*f) (list*)) {
-  procedure *p = malloc(sizeof(procedure));
-  init_proc(p, NULL, NULL, NULL, f);
-  list *l = malloc(sizeof(list));
-  init_list(l, NULL, Procedure, p);
-  return l;
+object_t make_primitive(object_t (*f) (object_t)) {
+  procedure_t p = procedure_new(NIL, NIL, NIL, f);
+  return obj_new_procedure(p);
 }
-*/
-/*
-list *init_global(struct nlist *hashtable[]) {
-  list *env = NULL;
-  
-  symbol *plus = intern("+", hashtable);
-  symbol *asterisk = intern("*", hashtable);
-  symbol *minus = intern("-", hashtable);
-  symbol *fslash = intern("/", hashtable);
-  symbol *lt = intern("<", hashtable);
-  symbol *gt = intern(">", hashtable);
-  symbol *equals = intern("=", hashtable);
 
-  symbol *cons = intern("cons", hashtable);
-  symbol *car = intern("car", hashtable);
-  symbol *cdr = intern("cdr", hashtable);
+object_t init_global() {
+  object_t env = NIL;
+
+  object_t plus = obj_new_symbol("+");
+  object_t asterisk = obj_new_symbol("*");
+  object_t minus = obj_new_symbol("-");
+  object_t fslash = obj_new_symbol("/");
+  object_t lessthan = obj_new_symbol("<");
+  object_t greaterthan = obj_new_symbol(">");
+  object_t equals = obj_new_symbol("=");
+  object_t cons = obj_new_symbol("cons");
+  object_t car = obj_new_symbol("car");
+  object_t cdr = obj_new_symbol("cdr");
+  object_t nil = obj_new_symbol("nil");
 
   env = define_variable(plus, make_primitive(&primitive_add), env);
   env = define_variable(asterisk, make_primitive(&primitive_multiply), env);
   env = define_variable(minus, make_primitive(&primitive_subtract), env);
   env = define_variable(fslash, make_primitive(&primitive_divide), env);
-
-  env = define_variable(lt, make_primitive(&primitive_lt), env);
-  env = define_variable(gt, make_primitive(&primitive_gt), env);
-  env = define_variable(equals, make_primitive(&primitive_eq), env);
-
+  env = define_variable(lessthan, make_primitive(&primitive_lessthan), env);
+  env = define_variable(greaterthan, make_primitive(&primitive_greaterthan), env);
+  env = define_variable(equals, make_primitive(&primitive_equals), env);
   env = define_variable(cons, make_primitive(&primitive_cons), env);
   env = define_variable(car, make_primitive(&primitive_car), env);
   env = define_variable(cdr, make_primitive(&primitive_cdr), env);
+  env = define_variable(nil, NIL, env);
 
   return env;
 }
-*/
 
 /* lookup var in an alist or plist */
 object_t assoc(object_t var, object_t list) {
@@ -59,11 +54,11 @@ object_t assoc(object_t var, object_t list) {
 /* search each frame in the environment for the var */
 object_t lookup_variable(object_t var, object_t env) {
   object_t binding = NIL;
-  object_t frame;
-  for(frame = (nilp(env) ? NIL : car(env)); !nilp(frame); frame = cdr(frame)) {
-    binding = assoc(var, frame);
+  while(!nilp(env)) {
+    binding = assoc(var, car(env));
     if(!nilp(binding))
       break;
+    env = cdr(env);
   }
   if(nilp(binding))
     return NIL;
@@ -73,7 +68,7 @@ object_t lookup_variable(object_t var, object_t env) {
 
 /* bind val to var and add it to this returning the new environment */
 object_t define_variable(object_t var, object_t val, object_t env) {
-  object_t binding = lookup_variable(var, env);
+  object_t binding; /* = lookup_variable(var, env);*/
   /*  if(!nilp(binding))
     printf("WARNING variable already defined: %s\n",
     obj_symbol_name(var));  */
@@ -82,8 +77,9 @@ object_t define_variable(object_t var, object_t val, object_t env) {
   if(!nilp(env))
     frame = car(env);
   frame = cons(binding, frame);
+
   if(!nilp(env))
-    env = cons(frame, cdr(env));
+    set_car(env, frame);
   else
     env = cons(frame, NIL);
   return env;
@@ -96,18 +92,16 @@ object_t set_variable(object_t var, object_t val, object_t env) {
 
 /* match up vars and vals, and cons the resulting frame onto the env */
 object_t extend_environment(object_t vars, object_t vals, object_t env) {
-  object_t var = vars;
-  object_t val = vals;
   object_t frame = NIL;
-  while(!nilp(var) && nilp(val)) {
-    frame = cons(cons(var, val), frame);
-    var = cdr(var);
-    val = cdr(val);
+  while(!nilp(vars) && !nilp(vals)) {
+    frame = cons(cons(car(vars), car(vals)), frame);
+    vars = cdr(vars);
+    vals = cdr(vals);
   }
-  if(!nilp(var) || !nilp(val)) {
+  if(!nilp(vars) || !nilp(vals)) {
     printf("ERROR extend_environment: mismatching number of vars and vals.\n");
     return NIL;
   }
-  return cons(frame, env);
+  env =  cons(frame, env);
+  return env;
 }
-

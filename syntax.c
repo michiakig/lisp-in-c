@@ -20,14 +20,14 @@
   type
  */
 
-static object_t DEFINE = NULL;
-static object_t IF = NULL;
-static object_t LAMBDA = NULL;
-static object_t SET = NULL;
-static object_t BEGIN = NULL;
-static object_t QUOTE = NULL;
-static object_t TRUE = NULL;
-static object_t FALSE = NULL;
+object_t DEFINE = NULL;
+object_t IF = NULL;
+object_t LAMBDA = NULL;
+object_t SET = NULL;
+object_t BEGIN = NULL;
+object_t QUOTE = NULL;
+object_t TRUE = NULL;
+object_t FALSE = NULL;
 
 int tagged_list(object_t, object_t);
 
@@ -108,68 +108,38 @@ object_t definition_value(object_t exp) {
   return car(cdr(cdr(exp)));
 }
 
-/*
-list *operator(list *exp) {
-  list *car = exp->data.listData;
 
-  list *ret = malloc(sizeof(list));
-  if(car->type == Symbol)
-    init_list(ret, NULL, Symbol, car->data.symbolData);
-  else if(car->type == List)
-    init_list(ret, NULL, List, car->data.listData);
-  return ret;
+object_t operator(object_t exp) {
+  return car(exp);
 }
 
-list *operands(list *exp) {
-  list *cdr = exp->data.listData->next;
-
-  list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, List, cdr);
-  return ret;  
+object_t operands(object_t exp) {
+  return cdr(exp);
 }
 
-list *if_predicate(list *exp) {
-  list *l = exp->data.listData;
-  list *pred = l->next;
-  return pred;
+
+object_t if_predicate(object_t exp) {
+  return car(cdr(exp));
+
 }
 
-list *if_consequent(list *exp) {
-  list *l = exp->data.listData;
-  list *consq = l->next->next;
-  return consq;
+object_t if_consequent(object_t exp) {
+  return car(cdr(cdr(exp)));
 }
 
-list *if_alternative(list *exp) {
-  list *l = exp->data.listData;
-  list *alt = l->next->next->next;
-  return alt;
+object_t if_alternative(object_t exp) {
+  return car(cdr(cdr(cdr(exp))));
 }
 
-list *begin_sequence(list *exp) {
-  list *l = exp->data.listData;
-  list *cdr = l->next;
 
-  list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, List, cdr);
-  return ret;
+object_t begin_sequence(object_t exp) {
+  return cdr(exp);
 }
 
-list *lambda_params(list *exp) {
-  list *l = exp->data.listData;
-  list *cdr = l->next;
-
-  list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, List, deep_list_copy(getList(cdr)));
-  return ret;
+object_t lambda_params(object_t exp) {
+  return car(cdr(exp));
 }
 
-list *lambda_body(list *exp) {
-  list *l = exp->data.listData;
-  list *cddr = l->next->next;
-
-  list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, List, deep_list_copy(cddr));
-  return ret;
+object_t lambda_body(object_t exp) {
+  return cdr(cdr(exp));
 }
- */
