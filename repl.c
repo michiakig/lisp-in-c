@@ -17,12 +17,28 @@ int main(int argc, char **argv) {
   object_t global_env = init_global();  /* initialize global environment */
   init_symbols();
 
+  FILE *fp;
+  struct node *input = NULL;
+  object_t exp;
+  object_t val;
+
   if(argc > 1) {
-    /* TODO: open the source file and process it*/
-  } /* otherwise start the REPL */
+    fp = fopen(argv[1], "r");
+    while(input == NULL) {
+      input = read_sexp(fp);
+    }
+    exp = parse_sexp(input);
+    val = eval(exp, &global_env);
+    if(val != NULL) {
+      printf("%s\n", val_prompt);
+      print_object(val);
+      printf("\n");
+    } else
+      printf("error? val was null\n");
+    fclose(fp);
+  }
 
   printf(";;; type \"q\" to quit\n");
-  struct node *input = NULL;
   while(1) {
     printf("%s ", in_prompt);
     input = read_sexp(stdin);
@@ -30,8 +46,8 @@ int main(int argc, char **argv) {
     if(input != NULL && strcmp(input->data, "q\n") == 0)
       return 0;
 
-    object_t exp = parse_sexp(input);
-    object_t val = eval(exp, &global_env);
+    exp = parse_sexp(input);
+    val = eval(exp, &global_env);
 
     if(val != NULL) {
       printf("%s\n", val_prompt);
