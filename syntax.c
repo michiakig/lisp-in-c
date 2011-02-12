@@ -1,10 +1,16 @@
 #include <string.h> /* for strcmp */
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
+
+#include "types.h"
+#include "list.h"
 #include "str_utils.h"
+
 #include "syntax.h"
-#include "storage.h"
+#include "eval.h"
+
+#include "hasht.h"
+
 /*
   These are syntax predicates which determe the type of an
   expression. When reading the code here, keep in mind that the list
@@ -16,88 +22,87 @@
 
   car, cdr are the car and cdr of the exp.
 
-  The syntax selectors assume the the exp passed is of the correct
-  type
+  The syntax selectors assume the the exp passed is of the correct type
  */
 
-static object_t DEFINE = NULL;
-static object_t IF = NULL;
-static object_t LAMBDA = NULL;
-static object_t SET = NULL;
-static object_t BEGIN = NULL;
-static object_t QUOTE = NULL;
+static symbol *DEFINE;
+static symbol *IF;
+static symbol *LAMBDA;
+static symbol *SET;
+static symbol *BEGIN;
+static symbol *QUOTE;
 
-int tagged_list(object_t, object_t);
-
-void init_symbols() {
-  DEFINE = obj_new_symbol("define");
-  IF = obj_new_symbol("if");
-  LAMBDA = obj_new_symbol("lambda");
-  SET = obj_new_symbol("set!");
-  BEGIN = obj_new_symbol("begin");
-  QUOTE = obj_new_symbol("quote");
-  TRUE = obj_new_symbol("#t");
-  FALSE = obj_new_symbol("#f");
+void init_hashtable(struct nlist *hashtable[], int len) {
+  DEFINE = intern("define", hashtable);
+  IF = intern("if", hashtable);
+  LAMBDA = intern("lambda", hashtable);
+  SET = intern("set!", hashtable);
+  BEGIN = intern("begin", hashtable);
+  QUOTE = intern("quote", hashtable);
 }
 
-
-int boolean_literal(object_t exp) {
-  return symbolcmp(exp, TRUE) || symbolcmp(exp, FALSE);
+int boolean_literal(char *str) {
+  return (strcmp(str, "#f") == 0)
+    || (strcmp(str, "#t") == 0)
+    || (strcmp(str, "#T") == 0)
+    || (strcmp(str, "#F") == 0);
 }
-
 
 /* self-evaluating expressions are numbers and boolean literals */
-int self_evaluating(object_t exp) {
-  return symbolp(exp) &&
-    (all_digits(obj_symbol_name(exp)) || boolean_literal(exp));
+int self_evaluating(list *exp) {
+  return exp->type == Symbol && (all_digits(exp->data.symbolData->name)
+                               || boolean_literal(exp->data.symbolData->name));
 }
 
-/* variables are symbols which are not self-evaluating */
-int variable(object_t exp) {
-  return symbolp(exp) &&
-    
+/* variables are just symbols (any other string) */
+int variable(list *exp) {
+  return exp->type == Symbol && !all_digits(exp->data.symbolData->name)
+    && exp->data.symbolData->name[0] != '#';
 }
 
-int quoted(object_t exp) {
+/* quoted expessions start with "quote" */
+int quoted(list *exp) {
   return tagged_list(exp, QUOTE);
 }
 
-int assignment(object_t exp) {
+int assignment(list *exp) {
   return tagged_list(exp, SET);
 }
 
-int definition(object_t exp) {
+int definition(list *exp) {
   return tagged_list(exp, DEFINE);
 }
 
-int lambda(object_t exp) {
+int lambda(list *exp) {
   return tagged_list(exp, LAMBDA);
 }
 
-int if_exp(object_t exp) {
+int if_exp(list *exp) {
   return tagged_list(exp, IF);
 }
 
-int begin(object_t exp) {
+int begin(list *exp) {
   return tagged_list(exp, BEGIN);
 }
 
 /* check if an expression is a list starting with some tag */
-int tagged_list(object_t exp, const object_t tag) {
-  if(consp(exp)) {
-    object_t a = car(exp);
-    return symbolp(a) && symbolcmp(a, tag);
+int tagged_list(list *exp, const symbol *tag) {
+  if(exp->type == List) {
+    list *car = exp->data.listData;
+    return car->type == Symbol && car->data.symbolData == tag;
   } else {
     return 0;
   }
 }
+/* TODO: doesn't handle (quote (foo bar)) */
+list *text_of_quotation(list *exp) {
+  list *cdr = exp->data.listData->next;
 
-object_t text_of_quotation(object_t exp) {
-  assert(consp(exp) && !nilp(cdr(exp)));
-  return car(cdr(exp));
+  list *ret = malloc(sizeof(list));
+  init_list(ret, NULL, Symbol, cdr->data.symbolData);
+  return ret;
 }
 
-/*
 list *definition_variable(list *exp) {
   list *cdr = exp->data.listData->next;
 
@@ -181,4 +186,3 @@ list *lambda_body(list *exp) {
   init_list(ret, NULL, List, deep_list_copy(cddr));
   return ret;
 }
- */

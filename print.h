@@ -8,7 +8,7 @@ void print_boxp(list *head);
 void print_exp(list *exp);
 void print_frame(list *frame);
 void print_env(list *env);
-void print_data(list *exp, void (*p) (list*));
+void print_data(list *exp);
 
 void print_hashtable(struct nlist *hashtable[], int len);
 

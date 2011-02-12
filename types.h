@@ -12,7 +12,7 @@ typedef struct list {
     struct procedure *procData;
     struct binding *bindData;
     char *stringData;
-    int consData;
+    int *consData;
   } data;
 } list;
 

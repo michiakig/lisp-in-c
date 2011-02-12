@@ -3,19 +3,20 @@
 #include "str_utils.h"
 
 int count_parens(char *s, int len) {
-  int count = 0;
-  int i;
-  for(i = 0; i < len && s[i] != '\0'; i++)
-    if(s[i] == '(')
+  int count=0;
+  for(int i=0; i<len && s[i]!='\0'; i++) {
+    if(s[i]=='(') {
       count++;
-    else if(s[i] == ')')
+    } else if(s[i]==')') {
       count--;
+    }
+  }
   return count;
 }
 
 int contains(char c, char *s) {
-  int i = 0;
-  while(s[i] != '\0' && s[i] != c)
+  int i=0;
+  while(s[i]!='\0' && s[i]!=c)
     i++;
   if(s[i]=='\0')
     return 0;
@@ -24,19 +25,19 @@ int contains(char c, char *s) {
 }
 
 void remove_newline(char *s) {
-  int i = 0;
-  while(s[i] != '\n' && s[i] != '\0')
+  int i=0;
+  while(s[i]!='\n' && s[i]!='\0')
     i++;
 
   s[i] = '\0';
 }
 
 int replace_first(char *s, char old, char new) {
-  int i = 0;
-  int count = 0;
-  while(s[i] != '\0') {
-    if(s[i] == old) {
-      s[i] = new;
+  int i=0;
+  int count=0;
+  while(s[i]!='\0') {
+    if(s[i]==old) {
+      s[i]=new;
       count++;
       break;
     }
@@ -46,11 +47,11 @@ int replace_first(char *s, char old, char new) {
 }
 
 int replace_all(char *s, char old, char new) {
-  int i = 0;
-  int count = 0;
-  while(s[i] != '\0') {
-    if(s[i] == old) {
-      s[i] = new;
+  int i=0;
+  int count=0;
+  while(s[i]!='\0') {
+    if(s[i]==old) {
+      s[i]=new;
       count++;
     }
     i++;
@@ -59,10 +60,12 @@ int replace_all(char *s, char old, char new) {
 }
 
 int all_digits(char *s) {
-  char *ch;
-  for(ch = s; *ch != '\0'; ch++)
-    if(isdigit(*ch) != 1)
+
+  for(char* ch = s; *ch != '\0'; ch++) {
+    if(isdigit(*ch) != 1) {
       return 0;
+    }
+  }
 
   return 1;
 }
