@@ -26,6 +26,8 @@ static object_t LAMBDA = NULL;
 static object_t SET = NULL;
 static object_t BEGIN = NULL;
 static object_t QUOTE = NULL;
+static object_t TRUE = NULL;
+static object_t FALSE = NULL;
 
 int tagged_list(object_t, object_t);
 
@@ -54,7 +56,7 @@ int self_evaluating(object_t exp) {
 
 /* variables are symbols which are not self-evaluating */
 int variable(object_t exp) {
-  return symbolp(exp) &&
+  return symbolp(exp) && !self_evaluating(exp);
     
 }
 
@@ -92,32 +94,21 @@ int tagged_list(object_t exp, const object_t tag) {
   }
 }
 
+/* TODO: check that the special forms are of the proper arity */
 object_t text_of_quotation(object_t exp) {
-  assert(consp(exp) && !nilp(cdr(exp)));
   return car(cdr(exp));
 }
 
+
+object_t definition_variable(object_t exp) {
+  return car(cdr(exp));
+}
+
+object_t definition_value(object_t exp) {
+  return car(cdr(cdr(exp)));
+}
+
 /*
-list *definition_variable(list *exp) {
-  list *cdr = exp->data.listData->next;
-
-  list *ret = malloc(sizeof(list));
-  init_list(ret, NULL, Symbol, cdr->data.symbolData);
-  return ret;
-}
-
-list *definition_value(list *exp) {
-  list *cddr = exp->data.listData->next->next;
-
-  list *ret = malloc(sizeof(list));
-  if(cddr->type == Symbol) { // value could be a symbol or a list
-    init_list(ret, NULL, Symbol, cddr->data.symbolData);
-  } else {
-    init_list(ret, NULL, List, cddr->data.listData);
-  }
-  return ret;
-}
-
 list *operator(list *exp) {
   list *car = exp->data.listData;
 

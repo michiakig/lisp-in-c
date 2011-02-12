@@ -11,11 +11,10 @@ int if_exp(object_t exp);
 int begin(object_t exp);
 
 object_t text_of_quotation(object_t exp);
+object_t definition_variable(object_t);
+object_t definition_value(object_t);
 
 /*
-list *definition_value(list *exp);
-list *definition_variable(list *exp);
-
 list *operands(list *exp);
 list *operator(list *exp);
 

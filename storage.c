@@ -18,7 +18,7 @@ struct object_t {
 struct object_t nildata = { .type = Cons, .data = { .consData = -1 } };
 object_t NIL = &nildata;
 
-#define MEMORY 10 /* this is managed memory */
+#define MEMORY 100 /* this is managed memory */
 static object_t the_cars[MEMORY] = {NULL};
 static object_t the_cdrs[MEMORY] = {NULL};
 static int freeptr = 0;
@@ -105,7 +105,8 @@ void print_object(object_t obj) {
     print_object(a);
     switch(d->type) {
     case Symbol:
-      printf(" . %s)", name(d->data.symbolData));
+      printf(" . %s", name(d->data.symbolData));
+      i = -1;
       break;
     case Cons:
       i = d->data.consData;

@@ -1,15 +1,8 @@
-#include <string.h> /* for strcmp */
-#include <stdio.h> /* for printf */
-#include <stdlib.h> /* for malloc */
-
-#include "types.h"
-#include "list.h"
-
+#include <stdio.h>
+#include "storage.h"
 #include "env.h"
-#include "eval.h"
-#include "apply.h"
-#include "print.h"
 
+/*
 list *make_primitive(list* (*f) (list*)) {
   procedure *p = malloc(sizeof(procedure));
   init_proc(p, NULL, NULL, NULL, f);
@@ -17,7 +10,8 @@ list *make_primitive(list* (*f) (list*)) {
   init_list(l, NULL, Procedure, p);
   return l;
 }
-
+*/
+/*
 list *init_global(struct nlist *hashtable[]) {
   list *env = NULL;
   
@@ -48,106 +42,72 @@ list *init_global(struct nlist *hashtable[]) {
 
   return env;
 }
+*/
 
-
-
-/*
- * An environment is a list of frames. A frame is a list of binds
- * A bind is a (name, value) binding pair defined as a struct, name is a char*
- * and value is a list*
- */
-
-binding *lookup_variable_binding(symbol *var, list *env) {
-  if(env == NULL) {
-    return NULL;
-  } else {
-    binding *bind;
-    for(list *frame = env->data.listData; frame != NULL; frame = frame->next) {
-      bind = frame->data.bindData;
-      if(var == bind->name) // just compare symbol pointers
-        return bind;
-    }
-    return lookup_variable_binding(var, env->next);
+/* lookup var in an alist or plist */
+object_t assoc(object_t var, object_t list) {
+  object_t l;
+  for(l = list; !nilp(l); l = cdr(l)) {
+    object_t a = car(l);
+    object_t aa = car(a);
+    if(symbolcmp(aa, var))
+      return a;
   }
+  return NIL;
 }
 
-list *lookup_variable_value(symbol *var, list *env) {
-  binding *bind = lookup_variable_binding(var, env);
-  if(bind == NULL) {
-    printf("ERROR undefined variable: %s\n", var->name);
-    return NULL;
-  } else {
-    list *ret = shallow_node_copy(bind->value);
-    return ret;
+/* search each frame in the environment for the var */
+object_t lookup_variable(object_t var, object_t env) {
+  object_t binding = NIL;
+  object_t frame;
+  for(frame = (nilp(env) ? NIL : car(env)); !nilp(frame); frame = cdr(frame)) {
+    binding = assoc(var, frame);
+    if(!nilp(binding))
+      break;
   }
+  if(nilp(binding))
+    return NIL;
+  else
+    return cdr(binding);
 }
 
-list *define_variable(symbol *var, list *value, list *env) {
-  binding *bind = lookup_variable_binding(var, env);
-  if(bind != NULL) {
-    printf("WARNING variable already defined: %s\n", var->name);
-  }
-
-  /* allocate a new binding*/
-  bind = malloc(sizeof(binding));
-  bind->name = var;
-  bind->value = shallow_node_copy(value);
-
-  /* allocate a new node to be added to the frame */
-  list *node = malloc(sizeof(list));
-  init_list(node, NULL, Binding, bind);
-
-  /* get the frame, allocating a new env if needed */
-  list *frame = NULL;
-  if(env == NULL) {
-    env = malloc(sizeof(list));
-    init_list(env, NULL, List, NULL);
-  } else {
-    frame = env->data.listData;
-  }
-
-  /* if the env was NULL or the env was empty, set frame to the new node */
-  if(frame == NULL)
-    frame = node;
-  else /* else prepend the node onto the frame */
-    frame = prepend(node, frame);
-
-  env->data.listData = frame;
+/* bind val to var and add it to this returning the new environment */
+object_t define_variable(object_t var, object_t val, object_t env) {
+  object_t binding = lookup_variable(var, env);
+  /*  if(!nilp(binding))
+    printf("WARNING variable already defined: %s\n",
+    obj_symbol_name(var));  */
+  binding = cons(var, val);
+  object_t frame = NIL;
+  if(!nilp(env))
+    frame = car(env);
+  frame = cons(binding, frame);
+  if(!nilp(env))
+    env = cons(frame, cdr(env));
+  else
+    env = cons(frame, NIL);
   return env;
 }
 
-list *set_variable(symbol *var, list *value, list *env) {
-  binding *bind = lookup_variable_binding(var, env);
-  if(bind == NULL) {
-    printf("ERROR undefined variable: %s\n", var->name);
-    return NULL;
-  }
-
-  bind->value = value; // TODO: fix this memory leak!
-  return env;
+/* TODO: fix this after figuring out set-cdr! and set-car! */
+object_t set_variable(object_t var, object_t val, object_t env) {
+  return define_variable(var, val, env);
 }
 
-list *extend_environment(list *vars, list *vals, list *env) {
-  list *frame = NULL;
-  list *r, *l;
-  for(r = vars, l = vals; r != NULL && l != NULL; r = r->next, l = l->next) {
-    binding *bind = malloc(sizeof(bind));
-    bind->name = getSymbol(r);
-    bind->value = getList(l);
-    list *frame_node = malloc(sizeof(list));
-    init_list(frame_node, NULL, Binding, bind);
-    frame = prepend(frame_node, frame);
+/* match up vars and vals, and cons the resulting frame onto the env */
+object_t extend_environment(object_t vars, object_t vals, object_t env) {
+  object_t var = vars;
+  object_t val = vals;
+  object_t frame = NIL;
+  while(!nilp(var) && nilp(val)) {
+    frame = cons(cons(var, val), frame);
+    var = cdr(var);
+    val = cdr(val);
   }
-
-  if(r != NULL || l != NULL) {
+  if(!nilp(var) || !nilp(val)) {
     printf("ERROR extend_environment: mismatching number of vars and vals.\n");
-    return NULL;
+    return NIL;
   }
-
-  list *env_node = malloc(sizeof(list));
-  init_list(env_node, NULL, List, frame);
-
-  return prepend(env_node, env);
+  return cons(frame, env);
 }
-
 
