@@ -1,24 +1,18 @@
-#ifndef __syntax__
-#define __syntax__ 1
+#ifndef syntax_included
+#define syntax_included
+#include "storage.h"
+int self_evaluating(object_t exp);
+int variable(object_t exp);
+int quoted(object_t exp);
+int assignment(object_t exp);
+int definition(object_t exp);
+int lambda(object_t exp);
+int if_exp(object_t exp);
+int begin(object_t exp);
 
-#include "types.h"
-#include "list.h"
-#include "hasht.h"
+object_t text_of_quotation(object_t exp);
 
-void init_hashtable(struct nlist *hashtable[], int len);
-
-int self_evaluating(list *exp);
-int variable(list *exp);
-int quoted(list *exp);
-int tagged_list(list *exp, const symbol* tag);
-int assignment(list *exp);
-int definition(list *exp);
-int lambda(list *exp);
-int if_exp(list *exp);
-int begin(list *exp);
-
-list *text_of_quotation(list *exp);
-
+/*
 list *definition_value(list *exp);
 list *definition_variable(list *exp);
 
@@ -32,5 +26,5 @@ list *if_alternative(list *exp);
 list *begin_sequence(list *exp);
 list *lambda_params(list *exp);
 list *lambda_body(list *exp);
-
+*/
 #endif
