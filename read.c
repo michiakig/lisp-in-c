@@ -6,81 +6,56 @@
 #include "aux.h"
 #include "str_utils.h"
 
-#include "list.h"
-#include "hasht.h"
+#include "storage.h"
+#include "lib/stack.h"
 
 #define MAX_LINE 1000
 
-/* Parses an s-expression (from read_sexp) into a linked-list (actually a tree) */
-list *parse_sexp(struct node *lines, struct nlist *obarray[]) {
+/* Parses an s-expression (from read_sexp) into a linked-list which
+   is laid out in the interpreter's managed memory */
+object_t parse_sexp(struct node *lines) {
   char *ch;
-  
   /* used in extracting symbols */
   char *brk, tmp;
   int len;
-  symbol *sym;
+  object_t sym;
 
+  Stack_T unfinished = Stack_new();
+
+  object_t head = NULL; /* head of the current list */
+  object_t last = NULL; /* last of ... */
+  object_t finished = NULL;
+  int paren = 0;
   struct node *line = lines; /* current line */
-  struct node *stack = NULL; /* stack of unfinished lists */
-  struct node *hcontainer; 
-  struct node *lcontainer; /* containers for pushing unfinished lists
-                              on the stack */
-
-  list *head = NULL; /* head of the current list */
-  list *last = NULL; /* last of ... */
-  list *ret = NULL; /* container to return */
-  list *n;
-
-  ch = (char*)line->data;
+  ch = (char*)line->data; /* current character */
   while(ch != NULL) { /* step over each char in input */
 
     if(*ch == '(') { /* start a new list */
+      paren = 1;
       ch++;
-
-      if(ret == NULL) { /* haven't initialized the final return list */
-        ret = malloc(sizeof(list));
-        init_list(ret, NULL, List, NULL);
+      if(last != NULL) { /* save the current list on the stack */
+        Stack_push(unfinished, last);
+        Stack_push(unfinished, head);
       }
-
-      if(last != NULL) { /* save the current, unfinished list on the 
-                            stack */
-
-        lcontainer = malloc(sizeof(*lcontainer));
-        lcontainer->next = NULL;
-        lcontainer->data = last;
-
-        hcontainer = malloc(sizeof(*hcontainer));
-        hcontainer->next = NULL;
-        lcontainer->data = head;
-
-        auxpush(lcontainer, &stack);
-        auxpush(hcontainer, &stack);
-      }
-
       last = NULL;
       head = last;
     } else if(*ch == ')') { /* finish the current list */
+      paren = 0;
       ch++;
 
-      if(stack != NULL) { /* there are unfinished lists on the stack */
-        hcontainer = auxpop(&stack);
-        lcontainer = auxpop(&stack);
-
-        n = malloc(sizeof(list));
-        init_list(n, NULL, List, head);
-        /* append the just finished list to the outer, unfinished list */
-        last = append(n, (list*)lcontainer->data);
-        head = hcontainer->data;
-
-        free(hcontainer);
-        free(lcontainer);
+      if(head == NULL) { /* this was an empty list */
+        head = NIL;
+        last = head;
       }
 
-      if(head == NULL) { /* empty list */
-        head = malloc(sizeof(*head));
-        init_list(head, NULL, Symbol, NULL);
-        last = head;
-        init_list(ret, NULL, List, head);
+      if(!Stack_empty(unfinished)) { /* there are unfinished lists on
+                                        the stack */
+        paren = 1;
+        finished = head;
+        /* append the just finished list to the outer, unfinished list */
+        head = Stack_pop(unfinished);
+        last = Stack_pop(unfinished);
+        last = storage_append(finished, last);
       }
     } else if(*ch == ' ' || *ch == '\t') { /* TODO check other
                                               whitespace? */
@@ -92,34 +67,25 @@ list *parse_sexp(struct node *lines, struct nlist *obarray[]) {
         ch = line->data;
       else
         ch = NULL;
+
     } else { /* get the token beginning with char at ch */
       brk = strpbrk(ch, "() \n\t");
       if(brk != NULL) {
         len = brk - ch;
         tmp = *brk;
         *brk = '\0';
-        sym = intern(ch, obarray);
+        sym = obj_new_symbol(ch);
         *brk = tmp;
 
         if(last == NULL) { /* this is the first element of the list */
-          if(ret == NULL) { /* and the only item, ie haven't seen an
-                               open paren */
-            ret = malloc(sizeof(*ret));
-            init_list(ret, NULL, Symbol, sym);
-            return ret;
-          } else { /* not the first element in the list */
-            last = (list*)malloc(sizeof(*last));
-            init_list(last, NULL, Symbol, sym);
+          if(paren == 0) { /* and it's the only item, ie just a atom */
+            return sym;
+          } else {
+            last = cons(sym, NIL);
             head = last;
-            if(ret->data.listData == NULL) { /* ret hasn't been used
-                                                yet */
-              init_list(ret, NULL, List, head);
-            }
           }
         } else { /* adding an new item to the list */
-          n = malloc(sizeof(*n));
-          init_list(n, NULL, Symbol, sym);
-          last = append(n, last);
+          last = storage_append(sym, last);
         }
         ch = brk;
       } else {
@@ -127,7 +93,7 @@ list *parse_sexp(struct node *lines, struct nlist *obarray[]) {
       }
     }
   }
-  return ret;
+  return head;
 }
 
 /* Read an s-expression from a FILE and buffer lines in a linked-list */

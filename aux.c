@@ -2,9 +2,7 @@
 #include <stdio.h>
 #include "aux.h"
 
-/* This is an auxiliary linked list implementation for use by the
-   reader. */
-
+/* 
 struct node *auxpop(struct node **stack) {
   struct node *ret = *stack;
   *stack = (*stack)->next;
@@ -15,6 +13,8 @@ void auxpush(struct node *new, struct node **stack) {
   new->next = *stack;
   *stack = new;
 }
+
+*/
 
 struct node *auxappend(struct node *new, struct node *lst) {
   struct node *n;
