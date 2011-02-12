@@ -5,7 +5,6 @@ Bugs and issues -- set aside for now:
 
 1. Doesn't handle two s-expression on a one line correctly
 2. Primitive numeric procedures should calculate the number of digits in result
-3. Something wrong with (quote (foo bar))
 4. no special handling of strings -- essentially treated as symbols
 5. quoted shouldn't take more than one arg
 6. definitions of the form (define (foo ...)) not handled
