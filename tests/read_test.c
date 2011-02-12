@@ -1,27 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../hasht.h"
 #include "../read.h"
 #include "../aux.h"
+#include "../storage.h"
 
 void free_node_and_string(struct node *n) {
   free(n->data);
   free(n);
 }
 
-struct nlist *obarray[100];
-
 int main(int argc, char **argv) {
   while(1) {
     printf("> ");
     struct node *lines = read_sexp(stdin);
-    list *sexp = parse_sexp(lines, obarray);
+    object_t sexp = parse_sexp(lines);
     
     if(*(char*)lines->data == 'q') {
       auxfor_each(lines, &free_node_and_string);
-      exit(0);
+      return 0;
     }
-    print_boxp(sexp);
+    print_object(sexp);
     printf("\n");
 
     auxfor_each(lines, &free_node_and_string);
