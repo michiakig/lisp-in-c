@@ -24,6 +24,8 @@ object_t init_global() {
   object_t cdr = obj_new_symbol("cdr");
   object_t nil = obj_new_symbol("nil");
 
+  object_t nilp = obj_new_symbol("nil?");
+
   env = define_variable(plus, make_primitive(&primitive_add), env);
   env = define_variable(asterisk, make_primitive(&primitive_multiply), env);
   env = define_variable(minus, make_primitive(&primitive_subtract), env);
@@ -34,6 +36,7 @@ object_t init_global() {
   env = define_variable(cons, make_primitive(&primitive_cons), env);
   env = define_variable(car, make_primitive(&primitive_car), env);
   env = define_variable(cdr, make_primitive(&primitive_cdr), env);
+  env = define_variable(nilp, make_primitive(&primitive_nilp), env);
   env = define_variable(nil, NIL, env);
 
   return env;

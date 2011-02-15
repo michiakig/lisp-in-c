@@ -116,6 +116,14 @@ object_t primitive_equals(object_t argl) {
   return cmp_primitive(argl, &equals);
 }
 
+object_t primitive_nilp(object_t argl) {
+  if(nilp(car(argl))) {
+    return obj_new_symbol("#t");
+  } else {
+    return obj_new_symbol("#f");
+  }
+}
+
 extern object_t eval_sequence(object_t, object_t *);
 
 object_t apply(procedure_t p, object_t argl) {

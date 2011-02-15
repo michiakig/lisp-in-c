@@ -22,31 +22,30 @@ object_t parse_sexp(struct node *lines) {
 
   Stack_T unfinished = Stack_new();
 
-  object_t head = NULL; /* head of the current list */
-  object_t last = NULL; /* last of ... */
-  object_t finished = NULL;
+  object_t head = NIL; /* head of the current list */
+  object_t last = NIL; /* last of ... */
+  object_t finished = NIL;
   int paren = 0;
   struct node *line = lines; /* current line */
   ch = (char*)line->data; /* current character */
   while(ch != NULL) { /* step over each char in input */
 
     if(*ch == '(') { /* start a new list */
-      paren = 1;
-      ch++;
-      if(last != NULL) { /* save the current list on the stack */
+
+      if(paren) {  /* save the current list on the stack */
         Stack_push(unfinished, last);
         Stack_push(unfinished, head);
       }
-      last = NULL;
+
+      last = NIL;
       head = last;
+
+      paren = 1;
+      ch++;
+
     } else if(*ch == ')') { /* finish the current list */
       paren = 0;
       ch++;
-
-      if(head == NULL) { /* this was an empty list */
-        head = NIL;
-        last = head;
-      }
 
       if(!Stack_empty(unfinished)) { /* there are unfinished lists on
                                         the stack */
@@ -55,8 +54,14 @@ object_t parse_sexp(struct node *lines) {
         /* append the just finished list to the outer, unfinished list */
         head = Stack_pop(unfinished);
         last = Stack_pop(unfinished);
-        last = storage_append(finished, last);
+
+        if(last == NIL) {
+          last = cons(finished, NIL);
+          head = last;
+        } else
+          last = storage_append(finished, last);
       }
+
     } else if(*ch == ' ' || *ch == '\t') { /* TODO check other
                                               whitespace? */
       ch++; /* skip whitespace */
@@ -77,16 +82,15 @@ object_t parse_sexp(struct node *lines) {
         sym = obj_new_symbol(ch);
         *brk = tmp;
 
-        if(last == NULL) { /* this is the first element of the list */
-          if(paren == 0) { /* and it's the only item, ie just a atom */
-            return sym;
-          } else {
+        if(paren)
+          if(last == NIL) {
             last = cons(sym, NIL);
             head = last;
-          }
-        } else { /* adding an new item to the list */
-          last = storage_append(sym, last);
-        }
+          } else
+            last = storage_append(sym, last);
+        else
+          return sym;
+
         ch = brk;
       } else {
         printf("ERROR in parse_sexp: strpbrk returned NULL\n");
@@ -107,9 +111,10 @@ struct node *read_sexp(FILE *f) {
   buf = malloc(sizeof(char) * MAX_LINE);
   if(buf == NULL)
     return NULL;
+  char *fgts;
 
   /* while there are valid lines and while the parens are not matched */
-  while(fgets(buf, MAX_LINE, f) != NULL &&
+  while((fgts = fgets(buf, MAX_LINE, f)) != NULL &&
         (count += count_parens(buf, MAX_LINE)) > 0) {
 
     n = malloc(sizeof(*n));
@@ -127,7 +132,15 @@ struct node *read_sexp(FILE *f) {
       auxfor_each(head, &auxfree_node);
       return NULL;
     }
+
   }
+
+  if(fgts == NULL) {
+    auxfor_each(head, &auxfree_node);
+    free(buf);
+    return NULL;
+  }
+
 
   if(buf[0] != '\n') {
     n = malloc(sizeof(*n));
@@ -140,6 +153,9 @@ struct node *read_sexp(FILE *f) {
       last = auxappend(n, last);
     }
   } else {
+    head = malloc(sizeof(*head));
+    head->data = NULL;
+    head->next = NULL;
     free(buf);
   }
 

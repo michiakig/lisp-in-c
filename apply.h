@@ -12,5 +12,6 @@ object_t primitive_equals(object_t);
 object_t primitive_cdr(object_t);
 object_t primitive_car(object_t);
 object_t primitive_cons(object_t);
+object_t primitive_nilp(object_t);
 object_t apply(procedure_t, object_t);
 #endif

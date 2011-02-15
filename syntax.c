@@ -50,8 +50,8 @@ int boolean_literal(object_t exp) {
 
 /* self-evaluating expressions are numbers and boolean literals */
 int self_evaluating(object_t exp) {
-  return symbolp(exp) &&
-    (all_digits(obj_symbol_name(exp)) || boolean_literal(exp));
+  return nilp(exp) || (symbolp(exp) &&
+                       (all_digits(obj_symbol_name(exp)) || boolean_literal(exp)));
 }
 
 /* variables are symbols which are not self-evaluating */

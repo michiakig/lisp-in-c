@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h> /* for strcmp */
 #include "storage.h"
 #include "eval.h"
@@ -24,17 +25,27 @@ int main(int argc, char **argv) {
 
   if(argc > 1) {
     fp = fopen(argv[1], "r");
-    while(input == NULL) {
+    input = read_sexp(fp);
+    while(input != NULL) {
+      if(input->data == NULL) {
+        free(input);
+        input = read_sexp(fp);
+        continue;
+      }
+        
+      exp = parse_sexp(input);
+      if(exp!=NULL) {
+        val = eval(exp, &global_env);
+        if(val != NULL) {
+          printf("%s\n", val_prompt);
+          print_object(val);
+          printf("\n");
+        } else
+          printf("error? val was null\n");
+      }
+
       input = read_sexp(fp);
     }
-    exp = parse_sexp(input);
-    val = eval(exp, &global_env);
-    if(val != NULL) {
-      printf("%s\n", val_prompt);
-      print_object(val);
-      printf("\n");
-    } else
-      printf("error? val was null\n");
     fclose(fp);
   }
 
@@ -47,6 +58,11 @@ int main(int argc, char **argv) {
       return 0;
 
     exp = parse_sexp(input);
+    /*
+    printf("exp: ");
+    print_object(exp);
+    printf("\n");
+    */
     val = eval(exp, &global_env);
 
     if(val != NULL) {
