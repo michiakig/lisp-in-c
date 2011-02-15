@@ -23,7 +23,7 @@ object_t parse_sexp(struct node *lines) {
   Stack_T unfinished = Stack_new();
 
   object_t head = NIL; /* head of the current list */
-  object_t last = NIL; /* last of ... */
+
   object_t finished = NIL;
   int paren = 0;
   struct node *line = lines; /* current line */
@@ -33,12 +33,12 @@ object_t parse_sexp(struct node *lines) {
     if(*ch == '(') { /* start a new list */
 
       if(paren) {  /* save the current list on the stack */
-        Stack_push(unfinished, last);
+
         Stack_push(unfinished, head);
       }
 
-      last = NIL;
-      head = last;
+
+      head = NIL;
 
       paren = 1;
       ch++;
@@ -53,13 +53,13 @@ object_t parse_sexp(struct node *lines) {
         finished = head;
         /* append the just finished list to the outer, unfinished list */
         head = Stack_pop(unfinished);
-        last = Stack_pop(unfinished);
 
-        if(last == NIL) {
-          last = cons(finished, NIL);
-          head = last;
+
+        if(head == NIL) {
+          head = cons(finished, NIL);
+
         } else
-          last = storage_append(finished, last);
+          storage_append(finished, head);
       }
 
     } else if(*ch == ' ' || *ch == '\t') { /* TODO check other
@@ -83,11 +83,11 @@ object_t parse_sexp(struct node *lines) {
         *brk = tmp;
 
         if(paren)
-          if(last == NIL) {
-            last = cons(sym, NIL);
-            head = last;
+          if(head == NIL) {
+            head = cons(sym, NIL);
+
           } else
-            last = storage_append(sym, last);
+            storage_append(sym, head);
         else
           return sym;
 
