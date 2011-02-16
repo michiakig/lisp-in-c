@@ -2,29 +2,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include <assert.h>
 
 #include "types.h"
 #include "apply.h"
 #include "storage.h"
 #include "env.h"
-
-struct procedure_t {
-  object_t params;
-  object_t body;
-  object_t env;
-  object_t (*fn) (object_t argl);
-};
-
-procedure_t procedure_new(object_t params, object_t body, object_t env,
-                          object_t (*fn) (object_t)) {
-
-  procedure_t p = malloc(sizeof(*p));
-  p->params = params;
-  p->body = body;
-  p->env = env;
-  p->fn = fn;
-  return p;
-}
+#include "obarray.h"
 
 object_t primitive_cons(object_t argl) {
   object_t a = car(argl);
@@ -42,7 +26,6 @@ object_t primitive_cdr(object_t argl) {
   return cdr(o);
 }
 
-
 /* Wrappers around built-in C arithmetic operators */
 double add(double a1, double a2) { return a1 + a2; }
 double multiply(double a1, double a2) { return a1 * a2; }
@@ -55,13 +38,13 @@ int equals(double a1, double a2) { return a1 == a2; }
 
 /* Fold (left) across an argument list, applying one of the num wrappers above */
 object_t num_primitive(object_t argl, double (*f) (double, double)) {
-  char *s = obj_symbol_name(car(argl));
+  char *s = symbol_name(obj_get_symbol(car(argl)));
   argl = cdr(argl);
   double result = atof(s);
   double arg;
   object_t a;
   while(!nilp(argl)) {
-    s = obj_symbol_name(car(argl));
+    s = symbol_name(obj_get_symbol(car(argl)));
     arg = atof(s);
     result = f(result, arg);
     argl = cdr(argl);
@@ -74,13 +57,13 @@ object_t num_primitive(object_t argl, double (*f) (double, double)) {
 }
 
 object_t cmp_primitive(object_t argl, int (*f) (double, double)) {
-  char *s = obj_symbol_name(car(argl));
+  char *s = symbol_name(obj_get_symbol(car(argl)));
   argl = cdr(argl);
   double arg1 = atof(s);
   double arg2;
   object_t ret;
   while(!nilp(argl)) {
-    s = obj_symbol_name(car(argl));
+    s = symbol_name(obj_get_symbol(car(argl)));
     arg2 = atof(s);
     if(!f(arg1, arg2)) {
       ret = obj_new_symbol("#f");
@@ -126,11 +109,24 @@ object_t primitive_nilp(object_t argl) {
 
 extern object_t eval_sequence(object_t, object_t *);
 
-object_t apply(procedure_t p, object_t argl) {
-  if(p->fn != NULL) { /* primitive procedure */
-    return (*(p->fn))(argl);
+
+object_t lambda_env(object_t exp) {
+  return car(cdr(exp));
+}
+
+object_t lambda_params(object_t exp) {
+  return car(cdr(cdr(exp)));
+}
+
+object_t lambda_body(object_t exp) {
+  return cdr(cdr(cdr(exp)));
+}
+
+object_t apply(object_t p, object_t argl) {
+  if(procp(p)) { /* primitive procedure */
+    return (obj_get_proc(p))(argl);
   } else {
-    object_t extended = extend_environment(p->params, argl, p->env);
-    return eval_sequence(p->body, &extended); 
+    object_t extended = extend_environment(lambda_params(p), argl, lambda_env(p));
+    return eval_sequence(lambda_body(p), &extended); 
   }
 }

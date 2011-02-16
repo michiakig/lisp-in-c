@@ -1,6 +1,6 @@
 #ifndef storage_included
 #define storage_included
-
+#include "obarray.h"
 #include "types.h"
 
 extern object_t NIL;
@@ -17,14 +17,14 @@ int consp(object_t);
 int symbolp(object_t);
 int procp(object_t);
 
-object_t obj_new_procedure(procedure_t);
+proc_t obj_get_proc(object_t p);
+object_t obj_new_proc(proc_t);
+
 object_t obj_new_symbol(char *);
+symbol_t obj_get_symbol(object_t);
 
 void print_object(object_t);
-char *obj_symbol_name(object_t);
-procedure_t obj_getProcedure(object_t p);
-int symbolcmp(object_t, object_t);
-
+int obj_symbol_cmp(object_t, object_t);
 void user_print_object(object_t);
 
 #endif

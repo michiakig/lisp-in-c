@@ -75,12 +75,12 @@ object_t eval_appl(object_t exp, object_t *env) {
     opands = cdr(opands);
   }
 
-  return apply(obj_getProcedure(ev_op), ev_opands);
+  return apply(ev_op, ev_opands);
 }
 
 int truthy(object_t exp) {
   if(symbolp(exp))
-    return !symbolcmp(exp, obj_new_symbol("#f"));
+    return !obj_symbol_cmp(exp, obj_new_symbol("#f"));
   else
     return 1;
 }
@@ -105,7 +105,6 @@ object_t eval_sequence(object_t exps, object_t *env) {
 }
 
 object_t eval_lambda(object_t exp, object_t *env) {
-  object_t params = lambda_params(exp);
-  object_t body = lambda_body(exp);
-  return obj_new_procedure(procedure_new(params, body, *env, NULL));
+  return cons(obj_new_symbol("_lambda"),
+              cons(*env, cdr(exp)));
 }

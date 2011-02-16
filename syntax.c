@@ -44,14 +44,15 @@ void init_symbols() {
 
 
 int boolean_literal(object_t exp) {
-  return symbolcmp(exp, TRUE) || symbolcmp(exp, FALSE);
+  return obj_symbol_cmp(exp, TRUE) || obj_symbol_cmp(exp, FALSE);
 }
 
 
 /* self-evaluating expressions are numbers and boolean literals */
 int self_evaluating(object_t exp) {
   return nilp(exp) || (symbolp(exp) &&
-                       (all_digits(obj_symbol_name(exp)) || boolean_literal(exp)));
+                       (all_digits(symbol_name(obj_get_symbol(exp))) ||
+                        boolean_literal(exp)));
 }
 
 /* variables are symbols which are not self-evaluating */
@@ -88,7 +89,7 @@ int begin(object_t exp) {
 int tagged_list(object_t exp, const object_t tag) {
   if(consp(exp)) {
     object_t a = car(exp);
-    return symbolp(a) && symbolcmp(a, tag);
+    return symbolp(a) && obj_symbol_cmp(a, tag);
   } else {
     return 0;
   }
@@ -134,12 +135,4 @@ object_t if_alternative(object_t exp) {
 
 object_t begin_sequence(object_t exp) {
   return cdr(exp);
-}
-
-object_t lambda_params(object_t exp) {
-  return car(cdr(exp));
-}
-
-object_t lambda_body(object_t exp) {
-  return cdr(cdr(exp));
 }

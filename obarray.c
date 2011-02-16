@@ -34,11 +34,11 @@ symbol_t lookup(char *s) {
   return NULL;
 }
 
-char *name(symbol_t sym) {
+char *symbol_name(symbol_t sym) {
   return sym->name;
 }
 
-symbol_t intern(char *name) {
+symbol_t symbol_intern(char *name) {
   struct symbol_t *symp;
   unsigned hashval;
   

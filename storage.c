@@ -13,7 +13,7 @@ struct object_t {
   union {
     int consData;
     symbol_t symbolData;
-    procedure_t procData;
+    proc_t procData;
   } data;
 };
 
@@ -25,15 +25,15 @@ static object_t the_cars[MEMORY] = {NULL};
 static object_t the_cdrs[MEMORY] = {NULL};
 static int freeptr = 0;
 
-int symbolcmp(object_t a, object_t b) {
+int obj_symbol_cmp(object_t a, object_t b) {
   return a->data.symbolData == b->data.symbolData;
 }
 
-procedure_t obj_getProcedure(object_t p) {
+proc_t obj_get_proc(object_t p) {
   return p->data.procData;
 }
 
-object_t obj_new_procedure(procedure_t p) {
+object_t obj_new_proc(proc_t p) {
   object_t new = malloc(sizeof(*new));
   new->type = Procedure;
   new->data.procData = p;
@@ -41,7 +41,7 @@ object_t obj_new_procedure(procedure_t p) {
 }
 
 object_t obj_new_symbol(char *s) {
-  symbol_t symbol = intern(s);
+  symbol_t symbol = symbol_intern(s);
 
   /* this is essentially a memory leak */
   object_t new = malloc(sizeof(*new));
@@ -50,8 +50,8 @@ object_t obj_new_symbol(char *s) {
   return new;
 }
 
-char *obj_symbol_name(object_t obj) {
-  return name(obj->data.symbolData);
+symbol_t obj_get_symbol(object_t obj) {
+  return obj->data.symbolData;
 }
 
 int symbolp(object_t obj) {
@@ -120,46 +120,43 @@ void set_cdr(object_t obj, object_t new) {
 
 /* prints an object_t, either a symbol or a cons (as an s-exp) */
 void print_object(object_t obj) {
-
   switch(obj->type) {
   case Symbol:
-    printf("%s", name(obj->data.symbolData));
+    printf("%s", symbol_name(obj_get_symbol(obj)));
     return;
     
   case Procedure:
     printf("<proc>");
     return;
-  }
 
-  /* assume it's a cons */
-  assert(obj->type == Cons);
-  printf("(");
-  int i = obj->data.consData;
-  object_t a;
-  object_t d;
-  while(i != -1) {
+  case Cons:
+    printf("(");
+    int i = obj->data.consData;
+    object_t a;
+    object_t d;
+    while(i != -1) {
+      a  = the_cars[i];
+      d  = the_cdrs[i];
+      print_object(a);
 
-    a  = the_cars[i];
-    d  = the_cdrs[i];
-    print_object(a);
-
-    switch(d->type) {
-    case Symbol:
-      printf(" . %s", name(d->data.symbolData));
-      i = -1;
-      break;
-    case Cons:
-      i = d->data.consData;
-      if(i != -1)
-        printf(" ");
-      break;
-    case Procedure:
-      printf(" . <proc>");
-      i = -1;
-      break;
+      switch(d->type) {
+      case Symbol:
+        printf(" . %s", symbol_name(obj_get_symbol(obj)));
+        i = -1;
+        break;
+      case Cons:
+        i = d->data.consData;
+        if(i != -1)
+          printf(" ");
+        break;
+      case Procedure:
+        printf(" . <proc>");
+        i = -1;
+        break;
+      }
     }
+    printf(")");
   }
-  printf(")");
 }
 
 object_t storage_append(object_t new, object_t old) {

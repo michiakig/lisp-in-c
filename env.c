@@ -4,11 +4,6 @@
 #include "env.h"
 #include "apply.h"
 
-object_t make_primitive(object_t (*f) (object_t)) {
-  procedure_t p = procedure_new(NIL, NIL, NIL, f);
-  return obj_new_procedure(p);
-}
-
 object_t init_global() {
   object_t env = NIL;
 
@@ -26,17 +21,17 @@ object_t init_global() {
 
   object_t nilp = obj_new_symbol("nil?");
 
-  env = define_variable(plus, make_primitive(&primitive_add), env);
-  env = define_variable(asterisk, make_primitive(&primitive_multiply), env);
-  env = define_variable(minus, make_primitive(&primitive_subtract), env);
-  env = define_variable(fslash, make_primitive(&primitive_divide), env);
-  env = define_variable(lessthan, make_primitive(&primitive_lessthan), env);
-  env = define_variable(greaterthan, make_primitive(&primitive_greaterthan), env);
-  env = define_variable(equals, make_primitive(&primitive_equals), env);
-  env = define_variable(cons, make_primitive(&primitive_cons), env);
-  env = define_variable(car, make_primitive(&primitive_car), env);
-  env = define_variable(cdr, make_primitive(&primitive_cdr), env);
-  env = define_variable(nilp, make_primitive(&primitive_nilp), env);
+  env = define_variable(plus, obj_new_proc(&primitive_add), env);
+  env = define_variable(asterisk, obj_new_proc(&primitive_multiply), env);
+  env = define_variable(minus, obj_new_proc(&primitive_subtract), env);
+  env = define_variable(fslash, obj_new_proc(&primitive_divide), env);
+  env = define_variable(lessthan, obj_new_proc(&primitive_lessthan), env);
+  env = define_variable(greaterthan, obj_new_proc(&primitive_greaterthan), env);
+  env = define_variable(equals, obj_new_proc(&primitive_equals), env);
+  env = define_variable(cons, obj_new_proc(&primitive_cons), env);
+  env = define_variable(car, obj_new_proc(&primitive_car), env);
+  env = define_variable(cdr, obj_new_proc(&primitive_cdr), env);
+  env = define_variable(nilp, obj_new_proc(&primitive_nilp), env);
   env = define_variable(nil, NIL, env);
 
   return env;
@@ -48,7 +43,7 @@ object_t assoc(object_t var, object_t list) {
   for(l = list; !nilp(l); l = cdr(l)) {
     object_t a = car(l);
     object_t aa = car(a);
-    if(symbolcmp(aa, var))
+    if(obj_symbol_cmp(aa, var))
       return a;
   }
   return NIL;
@@ -72,9 +67,6 @@ object_t lookup_variable(object_t var, object_t env) {
 /* bind val to var and add it to this returning the new environment */
 object_t define_variable(object_t var, object_t val, object_t env) {
   object_t binding; /* = lookup_variable(var, env);*/
-  /*  if(!nilp(binding))
-    printf("WARNING variable already defined: %s\n",
-    obj_symbol_name(var));  */
   binding = cons(var, val);
   object_t frame = NIL;
   if(!nilp(env))
