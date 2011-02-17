@@ -68,6 +68,7 @@ object_t lookup_variable(object_t var, object_t env) {
 object_t define_variable(object_t var, object_t val, object_t env) {
   object_t binding; /* = lookup_variable(var, env);*/
   binding = cons(var, val);
+
   object_t frame = NIL;
   if(!nilp(env))
     frame = car(env);

@@ -11,19 +11,39 @@ enum kind { Symbol, Cons, Procedure };
 struct object_t {
   enum kind type;
   union {
-    int consData;
+    struct {
+      object_t car;
+      object_t cdr;
+    } consData;
     symbol_t symbolData;
     proc_t procData;
   } data;
 };
 
-struct object_t nildata = { .type = Cons, .data = { .consData = -1 } };
-object_t NIL = &nildata;
+/* special global variable for null type */
+struct object_t nil = { .type = Cons,
+                        .data = { .consData = { .car = NULL,
+                                                .cdr = NULL } } };
+object_t NIL = &nil;
 
-#define MEMORY 1000 /* this is managed memory */
-static object_t the_cars[MEMORY] = {NULL};
-static object_t the_cdrs[MEMORY] = {NULL};
+#define HEAPSIZE 1000 /* this is managed memory */
+static object_t heap[HEAPSIZE] = {NULL};
 static int freeptr = 0;
+static object_t LAMBDA;
+
+void init_heap() {
+  LAMBDA = obj_new_symbol("_lambda");
+}
+
+object_t obj_new() {
+  if(freeptr < HEAPSIZE) {
+    heap[freeptr] = malloc(sizeof(*heap[freeptr]));
+    freeptr++;
+    return heap[freeptr-1];
+  } else {
+    printf("OUT OF MEMORY\n");
+  }
+}
 
 int obj_symbol_cmp(object_t a, object_t b) {
   return a->data.symbolData == b->data.symbolData;
@@ -34,7 +54,7 @@ proc_t obj_get_proc(object_t p) {
 }
 
 object_t obj_new_proc(proc_t p) {
-  object_t new = malloc(sizeof(*new));
+  object_t new = obj_new();
   new->type = Procedure;
   new->data.procData = p;
   return new;
@@ -44,7 +64,7 @@ object_t obj_new_symbol(char *s) {
   symbol_t symbol = symbol_intern(s);
 
   /* this is essentially a memory leak */
-  object_t new = malloc(sizeof(*new));
+  object_t new = obj_new();
   new->type = Symbol;
   new->data.symbolData = symbol;
   return new;
@@ -52,6 +72,10 @@ object_t obj_new_symbol(char *s) {
 
 symbol_t obj_get_symbol(object_t obj) {
   return obj->data.symbolData;
+}
+
+int lambdap(object_t obj) {
+  return consp(obj) && !nilp(obj) && obj_symbol_cmp(car(obj), LAMBDA);
 }
 
 int symbolp(object_t obj) {
@@ -67,93 +91,59 @@ int procp(object_t obj) {
 }
 
 int nilp(object_t obj) {
-  if(obj->type == Cons && obj->data.consData == -1)
-    return 1;
-  else
-    return 0;
+  return obj == NIL;
 }
 
 object_t cons(object_t a, object_t d) {
-  if(freeptr < MEMORY) {
-    the_cars[freeptr] = a;
-    the_cdrs[freeptr] = d;
-    int index = freeptr;
-    freeptr++;
-
-    /* this is a memory leak, but I don't know how to fix it */
-    object_t ret = malloc(sizeof(*ret));
-    ret->type = Cons;
-    ret->data.consData = index;
-    return ret;
-  } else {
-    printf("OUT OF MEMORY\n");
-  }
+  object_t new = obj_new();
+  new->type = Cons;
+  new->data.consData.car = a;
+  new->data.consData.cdr = d;
+  return new;
 }
 
 object_t car(object_t obj) {
   assert(obj->type == Cons);
-  int i = obj->data.consData;
-  assert(i < MEMORY);
-  return the_cars[i];
+  return obj->data.consData.car;
 }
 
 object_t cdr(object_t obj) {
   assert(obj->type == Cons);
-  int i = obj->data.consData;
-  assert(i < MEMORY);
-  return the_cdrs[i];
+  return obj->data.consData.cdr;
 }
 
 void set_car(object_t obj, object_t new) {
   assert(obj->type == Cons);
-  int i = obj->data.consData;
-  assert(i < MEMORY);
-  the_cars[i] = new;
+  obj->data.consData.car = new;
 }
 
 void set_cdr(object_t obj, object_t new) {
   assert(obj->type == Cons);
-  int i = obj->data.consData;
-  assert(i < MEMORY);
-  the_cdrs[i] = new;
+  obj->data.consData.cdr = new;
 }
 
 /* prints an object_t, either a symbol or a cons (as an s-exp) */
 void print_object(object_t obj) {
-  switch(obj->type) {
-  case Symbol:
+  if(symbolp(obj))
     printf("%s", symbol_name(obj_get_symbol(obj)));
-    return;
-    
-  case Procedure:
+  else if(procp(obj))
     printf("<proc>");
-    return;
-
-  case Cons:
+  else if(lambdap(obj))
+    printf("<compound proc>");
+  else if(nilp(obj))
+    printf("nil");
+  else if(consp(obj)) {
     printf("(");
-    int i = obj->data.consData;
-    object_t a;
-    object_t d;
-    while(i != -1) {
-      a  = the_cars[i];
-      d  = the_cdrs[i];
-      print_object(a);
-
-      switch(d->type) {
-      case Symbol:
-        printf(" . %s", symbol_name(obj_get_symbol(obj)));
-        i = -1;
-        break;
-      case Cons:
-        i = d->data.consData;
-        if(i != -1)
-          printf(" ");
-        break;
-      case Procedure:
-        printf(" . <proc>");
-        i = -1;
-        break;
-      }
+    while(!nilp(obj)) {
+      print_object(car(obj));
+      if(!nilp(cdr(obj)))
+        printf(" ");
+      if(!consp(cdr(obj))) {
+        printf(". ");
+        print_object(cdr(obj));
+        obj = NIL;
+      } else
+        obj = cdr(obj);
     }
     printf(")");
   }
@@ -163,7 +153,6 @@ object_t storage_append(object_t new, object_t old) {
   while(!nilp(cdr(old))) {
     old = cdr(old);
   }
-  the_cdrs[old->data.consData] = cons(new, NIL);
+  set_cdr(old, cons(new, NIL));
   return cdr(old);
 }
-

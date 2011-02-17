@@ -4,6 +4,7 @@
 #include "types.h"
 
 extern object_t NIL;
+void init_heap();
 object_t cons(object_t, object_t);
 object_t cdr(object_t);
 object_t car(object_t);

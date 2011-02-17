@@ -23,8 +23,8 @@ object_t parse_sexp(struct node *lines) {
   Stack_T unfinished = Stack_new();
 
   object_t head = NIL; /* head of the current list */
-
   object_t finished = NIL;
+
   int paren = 0;
   struct node *line = lines; /* current line */
   ch = (char*)line->data; /* current character */
@@ -32,17 +32,12 @@ object_t parse_sexp(struct node *lines) {
 
     if(*ch == '(') { /* start a new list */
 
-      if(paren) {  /* save the current list on the stack */
-
+      if(paren) /* save the current list on the stack */
         Stack_push(unfinished, head);
-      }
-
 
       head = NIL;
-
       paren = 1;
       ch++;
-
     } else if(*ch == ')') { /* finish the current list */
       paren = 0;
       ch++;
@@ -54,8 +49,7 @@ object_t parse_sexp(struct node *lines) {
         /* append the just finished list to the outer, unfinished list */
         head = Stack_pop(unfinished);
 
-
-        if(head == NIL) {
+        if(nilp(head)) {
           head = cons(finished, NIL);
 
         } else
@@ -83,10 +77,9 @@ object_t parse_sexp(struct node *lines) {
         *brk = tmp;
 
         if(paren)
-          if(head == NIL) {
+          if(nilp(head))
             head = cons(sym, NIL);
-
-          } else
+          else
             storage_append(sym, head);
         else
           return sym;
@@ -97,6 +90,8 @@ object_t parse_sexp(struct node *lines) {
       }
     }
   }
+  print_object(head);
+  printf("\n");
   return head;
 }
 

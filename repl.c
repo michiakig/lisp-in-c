@@ -15,6 +15,7 @@ extern void init_symbols();
 
 /* Top-level file, implements the REPL */
 int main(int argc, char **argv) {
+  init_heap();
   object_t global_env = init_global();  /* initialize global environment */
   init_symbols();
 
