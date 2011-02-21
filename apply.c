@@ -10,6 +10,26 @@
 #include "env.h"
 #include "obarray.h"
 
+extern object_t global_env;
+extern object_t load_file(char *, object_t *);
+extern void print_sequence(object_t);
+
+object_t primitive_set_car(object_t argl) {
+  set_car(car(argl), car(cdr(argl)));
+  return obj_new_symbol("ok");
+}
+
+object_t primitive_set_cdr(object_t argl) {
+  set_cdr(car(argl), car(cdr(argl)));
+  return obj_new_symbol("ok");
+}
+
+object_t primitive_load(object_t argl) {
+  object_t val = load_file(symbol_name(obj_get_symbol(car(argl))), &global_env);
+  print_sequence(val);
+  return obj_new_symbol("loaded.");
+}
+
 object_t primitive_cons(object_t argl) {
   object_t a = car(argl);
   object_t d = car(cdr(argl));
@@ -24,6 +44,16 @@ object_t primitive_car(object_t argl) {
 object_t primitive_cdr(object_t argl) {
   object_t o = car(argl);
   return cdr(o);
+}
+
+object_t primitive_eq(object_t argl) {
+  object_t a1 = car(argl);
+  object_t a2 = car(cdr(argl));
+
+  if(obj_symbol_cmp(a1, a2))
+    return obj_new_symbol("#t");
+  else
+    return obj_new_symbol("#f");
 }
 
 /* Wrappers around built-in C arithmetic operators */
@@ -123,10 +153,10 @@ object_t lambda_body(object_t exp) {
 }
 
 object_t apply(object_t p, object_t argl) {
-  if(procp(p)) { /* primitive procedure */
+  if(procp(p)) /* primitive procedure */
     return (obj_get_proc(p))(argl);
-  } else {
+  else {
     object_t extended = extend_environment(lambda_params(p), argl, lambda_env(p));
-    return eval_sequence(lambda_body(p), &extended); 
+    return eval_sequence(lambda_body(p), &extended);
   }
 }

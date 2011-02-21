@@ -26,7 +26,7 @@ struct object_t nil = { .type = Cons,
                                                 .cdr = NULL } } };
 object_t NIL = &nil;
 
-#define HEAPSIZE 1000 /* this is managed memory */
+#define HEAPSIZE 10000 /* this is managed memory */
 static object_t heap[HEAPSIZE] = {NULL};
 static int freeptr = 0;
 static object_t LAMBDA;

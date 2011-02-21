@@ -5,20 +5,6 @@
 #include "str_utils.h"
 #include "syntax.h"
 #include "storage.h"
-/*
-  These are syntax predicates which determe the type of an
-  expression. When reading the code here, keep in mind that the list
-  *exp contains the tagged union which is the actual expression. So,
-  in the following:
-
-  list *car = exp->data.listData;
-  list *cdr = exp->data.listData->next;
-
-  car, cdr are the car and cdr of the exp.
-
-  The syntax selectors assume the the exp passed is of the correct
-  type
- */
 
 object_t DEFINE = NULL;
 object_t IF = NULL;
@@ -102,13 +88,18 @@ object_t text_of_quotation(object_t exp) {
 
 
 object_t definition_variable(object_t exp) {
-  return car(cdr(exp));
+  if(consp(car(cdr(exp)))) /* handle shortcut procedure definitions */
+    return car(car(cdr(exp)));
+  else
+    return car(cdr(exp));
 }
 
 object_t definition_value(object_t exp) {
-  return car(cdr(cdr(exp)));
+  if(consp(car(cdr(exp)))) /* handle shortcut procedure definitions */
+    return cons(LAMBDA, cons(cdr(car(cdr(exp))), cdr(cdr(exp))));
+  else
+    return car(cdr(cdr(exp)));
 }
-
 
 object_t operator(object_t exp) {
   return car(exp);

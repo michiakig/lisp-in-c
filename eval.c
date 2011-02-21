@@ -17,33 +17,37 @@ object_t eval_sequence(object_t exps, object_t *env);
 object_t eval_lambda(object_t exp, object_t *env);
 
 object_t eval(object_t exp, object_t *env) {
-  if(self_evaluating(exp)) {
+  if(self_evaluating(exp))
     return exp;
 
-  } else if(variable(exp)) {
-    return lookup_variable(exp, *env);
-
-  } else if(quoted(exp)) {
+  else if(variable(exp)) {
+    object_t val = lookup_variable(exp, *env);
+    if(val == NULL) {
+      printf("ERROR undefined variable: %s\n", symbol_name(obj_get_symbol(exp)));
+      return NULL;
+    } else
+      return val;
+    
+  } else if(quoted(exp))
     return text_of_quotation(exp);
 
-  } else if(assignment(exp)) {
+  else if(assignment(exp))
     return eval_assignment(exp, env);
 
-  } else if(definition(exp)) {
+  else if(definition(exp))
     return eval_define(exp, env);
 
-  } else if(lambda(exp)) {
+  else if(lambda(exp))
     return eval_lambda(exp, env);
 
-  } else if(if_exp(exp)) {
+  else if(if_exp(exp))
     return eval_if(exp, env);
 
-  } else if(begin(exp)) {
+  else if(begin(exp))
     return eval_sequence(begin_sequence(exp), env);
 
-  } else {
+  else
     return eval_appl(exp, env);
-  }
 }
 
 object_t eval_define(object_t exp, object_t *env) {

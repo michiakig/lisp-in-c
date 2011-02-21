@@ -11,14 +11,12 @@
 
 #define MAX_LINE 1000
 
+object_t get_symbol(char **);
+
 /* Parses an s-expression (from read_sexp) into a linked-list which
    is laid out in the interpreter's managed memory */
 object_t parse_sexp(struct node *lines) {
   char *ch;
-  /* used in extracting symbols */
-  char *brk, tmp;
-  int len;
-  object_t sym;
 
   Stack_T unfinished = Stack_new();
 
@@ -67,15 +65,11 @@ object_t parse_sexp(struct node *lines) {
       else
         ch = NULL;
 
-    } else { /* get the token beginning with char at ch */
-      brk = strpbrk(ch, "() \n\t");
-      if(brk != NULL) {
-        len = brk - ch;
-        tmp = *brk;
-        *brk = '\0';
-        sym = obj_new_symbol(ch);
-        *brk = tmp;
-
+    } else if(*ch == '\'') { /* quote macro */
+      
+    } else { /* get the symbol beginning with char at ch */
+      object_t sym = get_symbol(&ch);
+      if(sym != NULL) {
         if(paren)
           if(nilp(head))
             head = cons(sym, NIL);
@@ -83,16 +77,31 @@ object_t parse_sexp(struct node *lines) {
             storage_append(sym, head);
         else
           return sym;
-
-        ch = brk;
       } else {
         printf("ERROR in parse_sexp: strpbrk returned NULL\n");
       }
     }
   }
-  print_object(head);
-  printf("\n");
+
   return head;
+}
+
+object_t get_symbol(char **ch) {
+  char *brk, tmp;
+  int len;
+  object_t sym;
+  brk = strpbrk(*ch, "() \n\t");
+  if(brk != NULL) {
+    len = brk - *ch;
+    tmp = *brk;
+    *brk = '\0';
+    sym = obj_new_symbol(*ch);
+    *brk = tmp;
+    (*ch) += len;
+    return sym;
+  } else {
+    return NULL;
+  }
 }
 
 /* Read an s-expression from a FILE and buffer lines in a linked-list */
