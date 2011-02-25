@@ -4,7 +4,6 @@
 #include "storage.h"
 #include "eval.h"
 #include "apply.h"
-#include "aux.h"
 #include "runtime/reader.h"
 #include "types.h"
 #include "env.h"

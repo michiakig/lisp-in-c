@@ -116,9 +116,6 @@ object_t extend_environment(object_t vars, object_t vals, object_t env) {
       vals = cdr(vals);
     }
   }
-  printf("frame: ");
-  print_object(frame);
-  printf("\n");
 
   if(!isnil(vars) || !isnil(vals)) {
     printf("ERROR extend_environment: mismatching number of vars and vals.\n");

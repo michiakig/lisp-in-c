@@ -8,8 +8,8 @@
 
 #include "reader.h"
 #include "../storage.h"
-#include "..lib/list.h"
-#include "..lib/str_utils.h"
+#include "../lib/list.h"
+#include "../lib/str_utils.h"
 
 #define MAX_LINE 100
 
@@ -33,11 +33,7 @@ object_t read_file(char *filename) {
   char *input;
   object_t seq = cons(obj_new_symbol("begin"), NIL);
   while((input = read_sexp(f)) != NULL) {
-    printf("input: [%s]%d\n", input, (int)strlen(input));
     object_t exp = parse_sexp(input);
-    printf("exp: ");
-    print_object(exp);
-    printf("\n");
     storage_append(exp, seq);
   }
   return seq;

@@ -235,9 +235,6 @@ object_t apply(object_t p, object_t argl) {
     return (proc->fn)(argl);
   else {
     object_t extended = extend_environment(lambda_params(p), argl, lambda_env(p));
-    printf("body: ");
-    print_object(lambda_body(p));
-    printf("\n");
     return eval_sequence(lambda_body(p), &extended);
   }
 }
