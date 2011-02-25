@@ -1,12 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "apply.h"
+#include <string.h>
+
 #include "storage.h"
 #include "obarray.h"
 #include "types.h"
 
-enum kind { Symbol, Cons, Procedure };
+enum kind { Symbol, Cons, Procedure, String };
 
 struct object_t {
   enum kind type;
@@ -17,6 +18,7 @@ struct object_t {
     } consData;
     symbol_t symbolData;
     proc_t procData;
+    char *stringData;
   } data;
 };
 
@@ -27,6 +29,7 @@ struct object_t nil = { .type = Cons,
 object_t NIL = &nil;
 
 #define HEAPSIZE 10000 /* this is managed memory */
+
 static object_t heap[HEAPSIZE] = {NULL};
 static int freeptr = 0;
 static object_t LAMBDA;
@@ -70,27 +73,59 @@ object_t obj_new_symbol(char *s) {
   return new;
 }
 
+object_t obj_new_string(char *string) {
+  char *copy = malloc(sizeof(*copy) * (strlen(string)+1));
+  char *s, *c;
+  for(c = copy, s = string; *s != '\0'; s++, c++)
+    if(*s == '\\') {
+      switch(*(s+1)) {
+      case 'n':
+        *c = '\n';
+        break;
+      case 't':
+        *c = '\t';
+        break;
+      default:
+        *c = *(s+1);
+        break;
+      }
+      s++;
+    } else
+      *c = *s;
+
+  *c = '\0';
+  object_t obj = obj_new();
+  obj->type = String;
+  obj->data.stringData = copy;
+  return obj;
+}
+
 symbol_t obj_get_symbol(object_t obj) {
   return obj->data.symbolData;
 }
 
-int lambdap(object_t obj) {
-  return consp(obj) && !nilp(obj) && obj_symbol_cmp(car(obj), LAMBDA);
+char *obj_get_string(object_t obj) {
+  assert(isstring(obj));
+  return obj->data.stringData;
 }
 
-int symbolp(object_t obj) {
+int isstring(object_t obj) {
+  return obj->type == String;
+}
+
+int issymbol(object_t obj) {
   return obj->type == Symbol;
 }
 
-int consp(object_t obj) {
+int iscons(object_t obj) {
   return obj->type == Cons;
 }
 
-int procp(object_t obj) {
+int isproc(object_t obj) {
   return obj->type == Procedure;
 }
 
-int nilp(object_t obj) {
+int isnil(object_t obj) {
   return obj == NIL;
 }
 
@@ -124,21 +159,24 @@ void set_cdr(object_t obj, object_t new) {
 
 /* prints an object_t, either a symbol or a cons (as an s-exp) */
 void print_object(object_t obj) {
-  if(symbolp(obj))
+  if(issymbol(obj))
     printf("%s", symbol_name(obj_get_symbol(obj)));
-  else if(procp(obj))
-    printf("<proc>");
-  else if(lambdap(obj))
-    printf("<compound proc>");
-  else if(nilp(obj))
+  else if(isstring(obj))
+    printf("\"%s\"", obj_get_string(obj));
+  else if(isproc(obj)) {
+    /*    if(isprimitiveproc(obj_get_proc(obj))) */
+      printf("<proc>");
+      /*    else */
+      /*      printf("<compound proc>"); */
+  } else if(isnil(obj))
     printf("nil");
-  else if(consp(obj)) {
+  else if(iscons(obj)) {
     printf("(");
-    while(!nilp(obj)) {
+    while(!isnil(obj)) {
       print_object(car(obj));
-      if(!nilp(cdr(obj)))
+      if(!isnil(cdr(obj)))
         printf(" ");
-      if(!consp(cdr(obj))) {
+      if(!iscons(cdr(obj))) {
         printf(". ");
         print_object(cdr(obj));
         obj = NIL;
@@ -146,13 +184,28 @@ void print_object(object_t obj) {
         obj = cdr(obj);
     }
     printf(")");
+  } else {
+    printf("unknown");
   }
 }
 
+int isproperlist(object_t list) {
+  while(iscons(cdr(list)) && !isnil(cdr(list)))
+    list = cdr(list);
+  if(isnil(cdr(list)))
+    return 1;
+  else
+    return 0;
+}
+
+object_t storage_last(object_t list) {
+  while(!isnil(cdr(list)))
+    list = cdr(list);
+  return list;
+}
+
 object_t storage_append(object_t new, object_t old) {
-  while(!nilp(cdr(old))) {
-    old = cdr(old);
-  }
+  old = storage_last(old);
   set_cdr(old, cons(new, NIL));
   return cdr(old);
 }

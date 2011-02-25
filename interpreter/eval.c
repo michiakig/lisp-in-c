@@ -9,6 +9,7 @@
 #include "types.h"
 #include "apply.h"
 
+object_t eval_loop(object_t, object_t *);
 object_t eval_define(object_t, object_t*);
 object_t eval_assignment(object_t, object_t*);
 object_t eval_appl(object_t, object_t*);
@@ -54,6 +55,8 @@ object_t eval_define(object_t exp, object_t *env) {
   object_t var = definition_variable(exp);
   object_t val = definition_value(exp);
   val = eval(val, env);
+  if(val == NULL)
+    return NULL;
   *env = define_variable(var, val, *env);
   return obj_new_symbol("ok");
 }
@@ -61,21 +64,36 @@ object_t eval_define(object_t exp, object_t *env) {
 object_t eval_assignment(object_t exp, object_t *env) {
   object_t var = definition_variable(exp);
   object_t val = eval(definition_value(exp), env);
+  if(val == NULL)
+    return NULL;
   *env = set_variable(var, val, *env);
   return obj_new_symbol("ok");
 }
 
 object_t eval_appl(object_t exp, object_t *env) {
+
   object_t op = operator(exp);
-
   object_t ev_op = eval(op, env);
-  object_t opands = operands(exp);
-  object_t opand = car(opands);
-  object_t ev_opands = cons(eval(opand, env), NIL);
+  if(ev_op == NULL)
+    return NULL;
 
+  object_t opands = operands(exp);
+  if(isnil(opands))
+    return apply(ev_op, NIL);
+
+  object_t opand = car(opands);
+  object_t ev_opand = eval(opand, env);
+  if(ev_opand == NULL)
+    return NULL;
+
+  object_t ev_opands = cons(ev_opand, NIL);
   opands = cdr(opands);
-  while(!nilp(opands)) {
-    storage_append(eval(car(opands), env), ev_opands);
+
+  while(!isnil(opands)) {
+    ev_opand = eval(car(opands), env);
+    if(ev_opand == NULL)
+      return NULL;
+    storage_append(ev_opand, ev_opands);
     opands = cdr(opands);
   }
 
@@ -83,7 +101,7 @@ object_t eval_appl(object_t exp, object_t *env) {
 }
 
 int truthy(object_t exp) {
-  if(symbolp(exp))
+  if(issymbol(exp))
     return !obj_symbol_cmp(exp, obj_new_symbol("#f"));
   else
     return 1;
@@ -101,7 +119,7 @@ object_t eval_if(object_t exp, object_t *env) {
 }
 
 object_t eval_sequence(object_t exps, object_t *env) {
-  while(!nilp(cdr(exps))) {
+  while(!isnil(cdr(exps))) {
     eval(car(exps), env);
     exps = cdr(exps);
   }
@@ -109,6 +127,6 @@ object_t eval_sequence(object_t exps, object_t *env) {
 }
 
 object_t eval_lambda(object_t exp, object_t *env) {
-  return cons(obj_new_symbol("_lambda"),
-              cons(*env, cdr(exp)));
+  return obj_new_compound(car(cdr(exp)), cdr(cdr(exp)), *env);
 }
+

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "str_utils.h"
+#include "lib/str_utils.h"
 #include "syntax.h"
 #include "storage.h"
 
@@ -28,22 +28,23 @@ void init_symbols() {
   FALSE = obj_new_symbol("#f");
 }
 
-
 int boolean_literal(object_t exp) {
   return obj_symbol_cmp(exp, TRUE) || obj_symbol_cmp(exp, FALSE);
 }
 
-
-/* self-evaluating expressions are numbers and boolean literals */
+/* self-evaluating expressions are nil, (symbols that are) numbers,
+   (symbols that are) boolean literals and strings */
 int self_evaluating(object_t exp) {
-  return nilp(exp) || (symbolp(exp) &&
-                       (all_digits(symbol_name(obj_get_symbol(exp))) ||
-                        boolean_literal(exp)));
+  return isnil(exp) ||
+    isstring(exp) ||
+    (issymbol(exp) &&
+     (all_digits(symbol_name(obj_get_symbol(exp))) ||
+      boolean_literal(exp)));
 }
 
 /* variables are symbols which are not self-evaluating */
 int variable(object_t exp) {
-  return symbolp(exp) && !self_evaluating(exp);
+  return issymbol(exp) && !self_evaluating(exp);
     
 }
 
@@ -73,9 +74,9 @@ int begin(object_t exp) {
 
 /* check if an expression is a list starting with some tag */
 int tagged_list(object_t exp, const object_t tag) {
-  if(consp(exp)) {
+  if(iscons(exp)) {
     object_t a = car(exp);
-    return symbolp(a) && obj_symbol_cmp(a, tag);
+    return issymbol(a) && obj_symbol_cmp(a, tag);
   } else {
     return 0;
   }
@@ -88,14 +89,14 @@ object_t text_of_quotation(object_t exp) {
 
 
 object_t definition_variable(object_t exp) {
-  if(consp(car(cdr(exp)))) /* handle shortcut procedure definitions */
+  if(iscons(car(cdr(exp)))) /* handle shortcut procedure definitions */
     return car(car(cdr(exp)));
   else
     return car(cdr(exp));
 }
 
 object_t definition_value(object_t exp) {
-  if(consp(car(cdr(exp)))) /* handle shortcut procedure definitions */
+  if(iscons(car(cdr(exp)))) /* handle shortcut procedure definitions */
     return cons(LAMBDA, cons(cdr(car(cdr(exp))), cdr(cdr(exp))));
   else
     return car(cdr(cdr(exp)));

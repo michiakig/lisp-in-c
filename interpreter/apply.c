@@ -9,10 +9,72 @@
 #include "storage.h"
 #include "env.h"
 #include "obarray.h"
+#include "eval.h"
+#include "runtime/reader.h"
+
+struct proc_t {
+  object_t (*fn) (object_t);
+  object_t params;
+  object_t body;
+  object_t env;
+};
+
+int isprimitiveproc(proc_t p) {
+  return p->fn != NULL;
+}
+
+int iscompoundproc(proc_t p) {
+  return p->fn == NULL;
+}
 
 extern object_t global_env;
 extern object_t load_file(char *, object_t *);
 extern void print_sequence(object_t);
+
+object_t primitive_consp(object_t argl) {
+  if(iscons(car(argl)))
+    return obj_new_symbol("#t");
+  else
+    return obj_new_symbol("#f");
+}
+
+object_t primitive_symbolp(object_t argl) {
+  if(issymbol(car(argl)))
+    return obj_new_symbol("#t");
+  else
+    return obj_new_symbol("#f");
+}
+
+object_t primitive_quit(object_t argl) {
+  exit(0);
+}
+
+object_t primitive_read(object_t argl) {
+  object_t r = parse_sexp(read_sexp(stdin));
+  if(r == NULL)
+    return obj_new_symbol("_empty_");
+  else
+    return r;
+}
+
+object_t primitive_eval(object_t argl) {
+  return eval(car(argl), &global_env);
+}
+
+object_t primitive_apply(object_t argl) {
+  return apply(car(argl), car(cdr(argl)));
+}
+
+object_t primitive_print(object_t argl) {
+  while(!isnil(argl)) {
+    if(!isstring(car(argl)))
+      print_object(car(argl));
+    else
+      printf("%s", obj_get_string(car(argl)));
+    argl = cdr(argl);
+  }
+  return NULL;
+}
 
 object_t primitive_set_car(object_t argl) {
   set_car(car(argl), car(cdr(argl)));
@@ -25,8 +87,7 @@ object_t primitive_set_cdr(object_t argl) {
 }
 
 object_t primitive_load(object_t argl) {
-  object_t val = load_file(symbol_name(obj_get_symbol(car(argl))), &global_env);
-  print_sequence(val);
+  object_t val = load_file(obj_get_string(car(argl)), &global_env);
   return obj_new_symbol("loaded.");
 }
 
@@ -73,7 +134,7 @@ object_t num_primitive(object_t argl, double (*f) (double, double)) {
   double result = atof(s);
   double arg;
   object_t a;
-  while(!nilp(argl)) {
+  while(!isnil(argl)) {
     s = symbol_name(obj_get_symbol(car(argl)));
     arg = atof(s);
     result = f(result, arg);
@@ -92,7 +153,7 @@ object_t cmp_primitive(object_t argl, int (*f) (double, double)) {
   double arg1 = atof(s);
   double arg2;
   object_t ret;
-  while(!nilp(argl)) {
+  while(!isnil(argl)) {
     s = symbol_name(obj_get_symbol(car(argl)));
     arg2 = atof(s);
     if(!f(arg1, arg2)) {
@@ -129,8 +190,8 @@ object_t primitive_equals(object_t argl) {
   return cmp_primitive(argl, &equals);
 }
 
-object_t primitive_nilp(object_t argl) {
-  if(nilp(car(argl))) {
+object_t primitive_isnil(object_t argl) {
+  if(isnil(car(argl))) {
     return obj_new_symbol("#t");
   } else {
     return obj_new_symbol("#f");
@@ -139,24 +200,44 @@ object_t primitive_nilp(object_t argl) {
 
 extern object_t eval_sequence(object_t, object_t *);
 
-
-object_t lambda_env(object_t exp) {
-  return car(cdr(exp));
+object_t lambda_env(object_t p) {
+  proc_t proc = obj_get_proc(p);
+  return proc->env;
 }
 
-object_t lambda_params(object_t exp) {
-  return car(cdr(cdr(exp)));
+object_t lambda_params(object_t p) {
+  proc_t proc = obj_get_proc(p);
+  return proc->params;
 }
 
-object_t lambda_body(object_t exp) {
-  return cdr(cdr(cdr(exp)));
+object_t lambda_body(object_t p) {
+  proc_t proc = obj_get_proc(p);
+  return proc->body;  
+}
+
+object_t obj_new_compound(object_t params, object_t body, object_t env ) {
+  proc_t proc = malloc(sizeof(*proc));
+  proc->params = params;
+  proc->body = body;
+  proc->env = env;
+  return obj_new_proc(proc);
+}
+
+object_t obj_new_primitive(object_t (*fn) (object_t)) {
+  proc_t proc = malloc(sizeof(*proc));
+  proc->fn = fn;
+  return obj_new_proc(proc);
 }
 
 object_t apply(object_t p, object_t argl) {
-  if(procp(p)) /* primitive procedure */
-    return (obj_get_proc(p))(argl);
+  proc_t proc = obj_get_proc(p);
+  if(isprimitiveproc(proc)) /* primitive procedure */
+    return (proc->fn)(argl);
   else {
     object_t extended = extend_environment(lambda_params(p), argl, lambda_env(p));
+    printf("body: ");
+    print_object(lambda_body(p));
+    printf("\n");
     return eval_sequence(lambda_body(p), &extended);
   }
 }
