@@ -2,6 +2,12 @@
 
 #include "str_utils.h"
 
+void strip_comments(char *s) {
+  while(*s != ';' && *s != '\0')
+    s++;
+  *s = '\0';
+}
+
 int count_parens(char *s, int len) {
   int count = 0;
   int i;

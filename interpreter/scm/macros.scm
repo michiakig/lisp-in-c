@@ -1,0 +1,45 @@
+
+(define (_expandlet_ exp)
+  (cons (append (list (quote lambda)
+                       (map car (cadr exp)))
+                 (cddr exp))
+        (map cadr (cadr exp))))
+
+(define (cond-clauses exp)
+  (cdr exp))
+(define (first-clause exp)
+  (car exp))
+(define (rest-clauses exp)
+  (cdr exp))
+(define (clause-pred clause)
+  (car clause))
+(define (clause-consq clause)
+  (cons (quote begin) (cdr clause)))
+
+(define (_expandcond_ exp)
+  (define (_expandcond_r_ clauses)
+    (if (nil? (rest-clauses clauses))
+        (if (eq? (clause-pred (first-clause clauses)) (quote else))
+            (clause-consq (first-clause clauses))
+            (list (quote if)
+                  (clause-pred (first-clause clauses))
+                  (clause-consq (first-clause clauses))))
+        (list (quote if)
+              (clause-pred (first-clause clauses))
+              (clause-consq (first-clause clauses))
+              (_expandcond_r_ (rest-clauses clauses)))))
+  (_expandcond_r_ (cond-clauses exp)))
+
+(define _macros_ (list
+                  (cons (quote let) _expandlet_)
+                  (cons (quote cond) _expandcond_)))
+
+(define (_expand_ exp)
+  (if (cons? exp)
+      (if (nil? exp)
+          exp
+          (if (assoc (car exp) _macros_)
+              ((cdr (assoc (car exp) _macros_)) exp)
+              exp))
+      exp))
+

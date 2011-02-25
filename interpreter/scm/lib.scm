@@ -1,14 +1,18 @@
 
+(define (caar x) (car (car x)))
 (define (cadr x) (car (cdr x)))
 (define (cdar x) (cdr (car x)))
 (define (cddr x) (cdr (cdr x)))
 
-(define (caddr x) (car (cdr (cdr x))))
-(define (cdadr x) (cdr (car (cdr x))))
-(define (cddar x) (cdr (cdr (car x))))
+(define (not x)
+  (if x #f #t))
 
-(define (list . rest)
-  rest)
+(define (assoc x lst)
+  (if (nil? lst)
+      #f
+      (if (eq? (caar lst) x)
+          (car lst)
+          (assoc x (cdr lst)))))
 
 (define (append! l1 l2)
   (if (nil? (cdr l1))
@@ -20,8 +24,6 @@
       (cons (car l1) l2)
       (cons (car l1)
             (append (cdr l1) l2))))
-
-
 
 (define (filter p lst)
   (if (nil? lst)

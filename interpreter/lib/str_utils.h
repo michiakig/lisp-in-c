@@ -1,6 +1,7 @@
 #ifndef __str_utils__
 #define __str_utils__ 1
 
+void strip_comments(char *s);
 int count_parens(char *s, int len);
 int contains(char c, char *s);
 
