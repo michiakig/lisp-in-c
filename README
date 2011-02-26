@@ -1,15 +1,16 @@
 
-A rudimentary Lisp written in C
+A rudimentary Lisp written in C, inspired by the last two exercises in SICP. (http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-35.html#%_thm_5.51)
 
-Inspired by:
-the last two exercises in SICP http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-35.html#%_thm_5.51
+Other inspiration from:
 http://scheme2006.cs.uchicago.edu/11-ghuloum.pdf
 http://www.iro.umontreal.ca/~boucherd/mslug/meetings/20041020/minutes-en.html
 https://github.com/darius/ichbins
 
-Bugs and issues -- set aside for now:
 
-1. Doesn't handle two s-expression on a one line correctly
-2. Primitive numeric procedures should calculate the number of digits in result
-5. quoted shouldn't take more than one arg
-
+1. Doesn't handle two s-expression on a one line, ignores the second one.
+2. No numeric types: numbers are just symbols. Arithmetic is done by converting symbols to C doubles via strtod and back to strings via sprintf. (I know!)
+3. Primitives don't check for arity, so (quote foo bar) is just foo, and not an error.
+1. No tail-call optimization
+1. No garbage collection
+1. No user-defined macros
+4. No reader macros, so 'foo doesn't work.
