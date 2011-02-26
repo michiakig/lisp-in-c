@@ -15,7 +15,7 @@ object_t storage_append(object_t, object_t);
 object_t storage_last(object_t);
 
 int isproperlist(object_t);
-int isnil(object_t);
+int isnull(object_t);
 int iscons(object_t);
 int issymbol(object_t);
 int isstring(object_t);

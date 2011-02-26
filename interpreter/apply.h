@@ -16,8 +16,9 @@ object_t primitive_cons(object_t);
 object_t primitive_set_cdr(object_t);
 object_t primitive_set_car(object_t);
 object_t primitive_eq(object_t);
-object_t primitive_isnil(object_t);
+object_t primitive_isnull(object_t);
 
+object_t primitive_read_file(object_t);
 object_t primitive_load(object_t);
 object_t primitive_print(object_t);
 
@@ -25,7 +26,10 @@ object_t primitive_apply(object_t);
 object_t primitive_eval(object_t);
 object_t primitive_read(object_t);
 object_t primitive_quit(object_t);
+object_t primitive_error(object_t);
 
+object_t primitive_numberp(object_t);
+object_t primitive_stringp(object_t);
 object_t primitive_symbolp(object_t);
 object_t primitive_consp(object_t);
 

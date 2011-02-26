@@ -23,12 +23,12 @@ struct object_t {
 };
 
 /* special global variable for null type */
-struct object_t nil = { .type = Cons,
+struct object_t empty = { .type = Cons,
                         .data = { .consData = { .car = NULL,
                                                 .cdr = NULL } } };
-object_t NIL = &nil;
+object_t NIL = &empty;
 
-#define HEAPSIZE 10000 /* this is managed memory */
+#define HEAPSIZE 100000 /* this is managed memory */
 
 static object_t heap[HEAPSIZE] = {NULL};
 static int freeptr = 0;
@@ -125,7 +125,7 @@ int isproc(object_t obj) {
   return obj->type == Procedure;
 }
 
-int isnil(object_t obj) {
+int isnull(object_t obj) {
   return obj == NIL;
 }
 
@@ -168,13 +168,13 @@ void print_object(object_t obj) {
       printf("<proc>");
       /*    else */
       /*      printf("<compound proc>"); */
-  } else if(isnil(obj))
-    printf("nil");
+  }
+
   else if(iscons(obj)) {
     printf("(");
-    while(!isnil(obj)) {
+    while(!isnull(obj)) {
       print_object(car(obj));
-      if(!isnil(cdr(obj)))
+      if(!isnull(cdr(obj)))
         printf(" ");
       if(!iscons(cdr(obj))) {
         printf(". ");
@@ -190,16 +190,16 @@ void print_object(object_t obj) {
 }
 
 int isproperlist(object_t list) {
-  while(iscons(cdr(list)) && !isnil(cdr(list)))
+  while(iscons(cdr(list)) && !isnull(cdr(list)))
     list = cdr(list);
-  if(isnil(cdr(list)))
+  if(isnull(cdr(list)))
     return 1;
   else
     return 0;
 }
 
 object_t storage_last(object_t list) {
-  while(!isnil(cdr(list)))
+  while(!isnull(cdr(list)))
     list = cdr(list);
   return list;
 }

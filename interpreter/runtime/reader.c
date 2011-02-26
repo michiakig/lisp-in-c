@@ -53,6 +53,10 @@ object_t parse_sexp2(char **in, object_t current) {
   enum kind k = next_token(in, &buf);
   object_t rest, s;
   switch(k) {
+
+  case End:
+    return current;
+
   case Left:
     rest = parse_sexp2(in, NIL);
     if(current == NULL)
@@ -68,9 +72,33 @@ object_t parse_sexp2(char **in, object_t current) {
     return current;
 
   case Period:
-    rest = parse_sexp2(in, NULL); /* grabbing next symbol */
+    rest = parse_sexp2(in, NULL);
     set_cdr(storage_last(current), rest);
     return parse_sexp2(in, current);
+
+  
+  case Single: /* following are reader-macros */
+    rest = parse_sexp2(in, NULL);
+    object_t ret = cons(obj_new_symbol("quote"), cons(rest, NIL));
+    if(current == NULL) {
+      return ret;
+    } else if(current == NIL) {
+      current = cons(ret, NIL);
+    } else {
+      storage_append(ret, current);
+    }
+
+    return parse_sexp2(in, current);
+
+    /*
+  case Back:
+    rest = parse_sexp2(in, NULL);
+    return cons(obj_new_symbol("quasiquote"), cons(rest, NIL));
+
+  case Comma:
+    rest = parse_sexp2(in, NULL);
+    return cons(obj_new_symbol("unquote"), cons(rest, NIL));
+    */
 
   case Symbol:
   case String:
@@ -173,11 +201,27 @@ enum kind next_token(char **in, char **buf) {
   }
 }
 
+/* strips comments from a line, accepts an int indicating if we are
+   inside a string, returns if we are still inside a string */
+int strip_comments(char *s, int quote) {
+  while(*s != '\0') {
+    if(*s == '"')
+      quote = quote ? 0 : 1;
+    if(*s == ';' && !quote)
+      break;
+    s++;
+  }
+  *s = '\0';
+  return quote;
+}
+
 /* Read an s-expression from a FILE and buffer lines in a linked-list */
 char *read_sexp(FILE *in) {
   struct list_t *head = NULL;
   int parens = 0;
+  int quote = 0;
   size_t chars = 0;
+
 
   char *buf = malloc(sizeof(*buf) * MAX_LINE);
   if(buf == NULL)
@@ -187,11 +231,10 @@ char *read_sexp(FILE *in) {
   /* while there are valid lines and while the parens are not matched */
   char *str;
   while((str = fgets(buf, MAX_LINE, in)) != NULL) {
-    
-    if(buf[0] == '\n') /* skip totally blank lines */
-      continue;
 
-    strip_comments(buf);
+    quote = strip_comments(buf, quote);
+    if(buf[0] == '\n' || buf[0] == '\0') /* skip totally blank lines */
+      continue;
 
     /* break if we've read a matched s-expression */
     if((parens += count_parens(buf, MAX_LINE)) == 0)
@@ -212,7 +255,7 @@ char *read_sexp(FILE *in) {
     return NULL;
   }
 
-  strip_comments(buf);
+  quote = strip_comments(buf, quote);
   head = list_push(buf, head);
   head = list_reverse(head);
 

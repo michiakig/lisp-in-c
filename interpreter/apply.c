@@ -11,6 +11,7 @@
 #include "obarray.h"
 #include "eval.h"
 #include "runtime/reader.h"
+#include "lib/str_utils.h"
 
 struct proc_t {
   object_t (*fn) (object_t);
@@ -29,7 +30,18 @@ int iscompoundproc(proc_t p) {
 
 extern object_t global_env;
 extern object_t load_file(char *, object_t *);
+object_t read_file(char *);
 extern void print_sequence(object_t);
+
+object_t primitive_read_file(object_t argl) {
+  object_t seq = read_file(obj_get_string(car(argl)));
+  return seq;
+}
+
+object_t primitive_load(object_t argl) {
+  object_t val = load_file(obj_get_string(car(argl)), &global_env);
+  return obj_new_symbol("loaded.");
+}
 
 object_t primitive_consp(object_t argl) {
   if(iscons(car(argl)))
@@ -43,6 +55,26 @@ object_t primitive_symbolp(object_t argl) {
     return obj_new_symbol("#t");
   else
     return obj_new_symbol("#f");
+}
+
+object_t primitive_stringp(object_t argl) {
+  if(isstring(car(argl)))
+    return obj_new_symbol("#t");
+  else
+    return obj_new_symbol("#f");
+}
+
+object_t primitive_numberp(object_t argl) {
+  char * s = symbol_name(obj_get_symbol(car(argl)));
+  if(all_digits(s))
+    return obj_new_symbol("#t");
+  else
+    return obj_new_symbol("#f");
+}
+
+object_t primitive_error(object_t argl) {
+  primitive_print(argl);
+  exit(0);
 }
 
 object_t primitive_quit(object_t argl) {
@@ -66,7 +98,7 @@ object_t primitive_apply(object_t argl) {
 }
 
 object_t primitive_print(object_t argl) {
-  while(!isnil(argl)) {
+  while(!isnull(argl)) {
     if(!isstring(car(argl)))
       print_object(car(argl));
     else
@@ -86,10 +118,7 @@ object_t primitive_set_cdr(object_t argl) {
   return obj_new_symbol("ok");
 }
 
-object_t primitive_load(object_t argl) {
-  object_t val = load_file(obj_get_string(car(argl)), &global_env);
-  return obj_new_symbol("loaded.");
-}
+
 
 object_t primitive_cons(object_t argl) {
   object_t a = car(argl);
@@ -134,7 +163,7 @@ object_t num_primitive(object_t argl, double (*f) (double, double)) {
   double result = atof(s);
   double arg;
   object_t a;
-  while(!isnil(argl)) {
+  while(!isnull(argl)) {
     s = symbol_name(obj_get_symbol(car(argl)));
     arg = atof(s);
     result = f(result, arg);
@@ -153,7 +182,7 @@ object_t cmp_primitive(object_t argl, int (*f) (double, double)) {
   double arg1 = atof(s);
   double arg2;
   object_t ret;
-  while(!isnil(argl)) {
+  while(!isnull(argl)) {
     s = symbol_name(obj_get_symbol(car(argl)));
     arg2 = atof(s);
     if(!f(arg1, arg2)) {
@@ -190,8 +219,8 @@ object_t primitive_equals(object_t argl) {
   return cmp_primitive(argl, &equals);
 }
 
-object_t primitive_isnil(object_t argl) {
-  if(isnil(car(argl))) {
+object_t primitive_isnull(object_t argl) {
+  if(isnull(car(argl))) {
     return obj_new_symbol("#t");
   } else {
     return obj_new_symbol("#f");

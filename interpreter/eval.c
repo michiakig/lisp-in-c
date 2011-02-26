@@ -18,6 +18,8 @@ object_t eval_sequence(object_t exps, object_t *env);
 object_t eval_lambda(object_t exp, object_t *env);
 
 object_t eval(object_t exp, object_t *env) {
+
+
   if(self_evaluating(exp))
     return exp;
 
@@ -78,7 +80,7 @@ object_t eval_appl(object_t exp, object_t *env) {
     return NULL;
 
   object_t opands = operands(exp);
-  if(isnil(opands))
+  if(isnull(opands))
     return apply(ev_op, NIL);
 
   object_t opand = car(opands);
@@ -89,7 +91,7 @@ object_t eval_appl(object_t exp, object_t *env) {
   object_t ev_opands = cons(ev_opand, NIL);
   opands = cdr(opands);
 
-  while(!isnil(opands)) {
+  while(!isnull(opands)) {
     ev_opand = eval(car(opands), env);
     if(ev_opand == NULL)
       return NULL;
@@ -119,7 +121,7 @@ object_t eval_if(object_t exp, object_t *env) {
 }
 
 object_t eval_sequence(object_t exps, object_t *env) {
-  while(!isnil(cdr(exps))) {
+  while(!isnull(cdr(exps))) {
     eval(car(exps), env);
     exps = cdr(exps);
   }
@@ -127,6 +129,7 @@ object_t eval_sequence(object_t exps, object_t *env) {
 }
 
 object_t eval_lambda(object_t exp, object_t *env) {
+
   return obj_new_compound(car(cdr(exp)), cdr(cdr(exp)), *env);
 }
 
