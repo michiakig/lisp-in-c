@@ -1,21 +1,18 @@
+(load "/Users/aki/hacking/lisp/lisp-in-c/interpreter/scm/lib.scm")
+(load "/Users/aki/hacking/lisp/lisp-in-c/interpreter/scm/macros.scm")
 
-(define _exp_ ())
+(load-with-macros "/Users/aki/hacking/lisp/lisp-in-c/interpreter/scm/extlib.scm" )
 
 (define (_repl_)
+  (define _exp_ ())
   (print "> ")
   (set! _exp_ (read))
   (if (eq? _exp_ (quote quit))
       (quit)
-      (begin
-        (print (eval _exp_))
-        (print "\n")
-        (_repl_))
-      ;; (if (not (eq? _exp_ (quote _empty_)))
-      ;;     (begin
-      ;;       (print (eval (_expand_ _exp_)))
-      ;;       (print "\n")
-      ;;       (_repl_))
-      ;;     (_repl_))
-      ))
-
+      (if (not (eq? _exp_ (quote _empty_)))
+          (begin
+            (print (eval (_expand_ _exp_)))
+            (print "\n")
+            (_repl_))
+          (_repl_))))
 (_repl_)

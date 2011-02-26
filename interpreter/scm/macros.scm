@@ -1,4 +1,22 @@
 
+(define (_expandand_ exp)
+  (define (_expandandr_ operands)
+    (if (null? operands)
+        '#t
+        (list 'if (car operands)
+              (_expandandr_ (cdr operands))
+              '#f)))
+  (_expandandr_ (cdr exp)))
+
+(define (_expandor_ exp)
+  (define (_expandorr_ operands)
+    (if (null? operands)
+        '#f
+        (list 'if (car operands)
+              '#t
+              (_expandorr_ (cdr operands)))))
+  (_expandorr_ (cdr exp)))
+
 (define (_expandlet_ exp)
   (cons (append (list (quote lambda)
                        (map car (cadr exp)))
@@ -18,7 +36,7 @@
 
 (define (_expandcond_ exp)
   (define (_expandcond_r_ clauses)
-    (if (nil? (rest-clauses clauses))
+    (if (null? (rest-clauses clauses))
         (if (eq? (clause-pred (first-clause clauses)) (quote else))
             (clause-consq (first-clause clauses))
             (list (quote if)
@@ -31,15 +49,26 @@
   (_expandcond_r_ (cond-clauses exp)))
 
 (define _macros_ (list
-                  (cons (quote let) _expandlet_)
-                  (cons (quote cond) _expandcond_)))
+                  (cons 'let _expandlet_)
+                  (cons 'cond _expandcond_)
+                  (cons 'and _expandand_)
+                  (cons 'or _expandor_)))
+
+(define _identity_ (lambda (x) x))
+
+(define (_macro?_ exp)
+  (if (assoc (car exp) _macros_)
+      (cdr (assoc (car exp) _macros_))
+      _identity_))
 
 (define (_expand_ exp)
-  (if (cons? exp)
-      (if (nil? exp)
-          exp
-          (if (assoc (car exp) _macros_)
-              ((cdr (assoc (car exp) _macros_)) exp)
-              exp))
-      exp))
+  (if (null? exp)
+      ()
+      (if (cons? exp)
+          ((_macro?_ exp)
+           (cons (car exp)
+                 (improper-map _expand_ (cdr exp))))
+          exp)))
 
+(define (load-with-macros filename)
+  (eval (_expand_ (read-file filename))))

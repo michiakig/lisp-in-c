@@ -1,0 +1,11 @@
+(define _exp_ ())
+(define (_repl_)
+  (print "> ")
+  (set! _exp_ (read))
+  (if (eq? _exp_ (quote quit))
+      (quit)
+      (begin
+        (print (eval _exp_))
+        (print "\n")
+        (_repl_))))
+(_repl_)
