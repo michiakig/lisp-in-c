@@ -33,6 +33,9 @@ object_t primitive_stringp(object_t);
 object_t primitive_symbolp(object_t);
 object_t primitive_consp(object_t);
 
+object_t primitive_file_append(object_t);
+object_t primitive_symbol2string(object_t);
+
 int isprimitiveproc(proc_t);
 int iscompoundproc(proc_t);
 object_t obj_new_compound(object_t, object_t, object_t);

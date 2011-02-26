@@ -35,11 +35,14 @@ object_t init_global() {
     obj_new_symbol("quit"),     obj_new_primitive(&primitive_quit),
     obj_new_symbol("error"),     obj_new_primitive(&primitive_error),
     obj_new_symbol("string?"),     obj_new_primitive(&primitive_stringp),
-    obj_new_symbol("number?"),     obj_new_primitive(&primitive_numberp)
+    obj_new_symbol("number?"),     obj_new_primitive(&primitive_numberp),
+
+    obj_new_symbol("file-append"),     obj_new_primitive(&primitive_file_append),
+    obj_new_symbol("symbol->string"),     obj_new_primitive(&primitive_symbol2string)
   };
 
   int i;
-  for(i = 0; i < 52; i+=2)
+  for(i = 0; i < 56; i+=2)
     env = define_variable(primitives[i], primitives[i+1], env);
 
   return env;

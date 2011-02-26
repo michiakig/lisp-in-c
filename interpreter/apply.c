@@ -33,6 +33,24 @@ extern object_t load_file(char *, object_t *);
 object_t read_file(char *);
 extern void print_sequence(object_t);
 
+int file_append(char *string, char *filename) {
+  FILE *f = fopen(filename, "a");
+  if(f==NULL)
+    return 0;
+  fprintf(f, "%s", string);
+  fclose(f);
+  return 1;
+}
+
+object_t primitive_file_append(object_t argl) {
+  char *string = obj_get_string(car(argl));
+  char *filename = obj_get_string(car(cdr(argl)));
+  if(file_append(string, filename))
+    return obj_new_symbol("#t");
+  else
+    return obj_new_symbol("#f");
+}
+
 object_t primitive_read_file(object_t argl) {
   object_t seq = read_file(obj_get_string(car(argl)));
   return seq;
@@ -48,6 +66,10 @@ object_t primitive_consp(object_t argl) {
     return obj_new_symbol("#t");
   else
     return obj_new_symbol("#f");
+}
+
+object_t primitive_symbol2string(object_t argl) {
+  return obj_new_string(symbol_name(obj_get_symbol(car(argl))));
 }
 
 object_t primitive_symbolp(object_t argl) {

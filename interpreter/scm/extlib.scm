@@ -10,3 +10,10 @@
         ((memq (car s1) s2) (list-difference (cdr s1) s2))
         (else (cons (car s1)
                     (list-difference (cdr s1) s2)))))
+
+(define (for-each fn lst)
+  (if (null? lst)
+      'done
+      (begin
+        (fn (car lst))
+        (for-each fn (cdr lst)))))
