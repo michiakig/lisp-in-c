@@ -1,7 +1,12 @@
-(define prelude "#include \"runtime.h\"\n")
+(define prelude
+  "
+#include \"runtime.h\"
+#include \"../interpreter/storage.h\"
+")
 
 (define entry-pre
-  "int entry(void) {\npc=START;\nreg[continue]=END;\n")
+  "object_t entry(void) {\npc=START;\nreg[continue]=label2obj(END);\ninit();\n")
+
 (define entry-post "return reg[val]; \n}\n")
 
 (define while-switch-pre

@@ -65,9 +65,12 @@
   (if (null? exp)
       ()
       (if (cons? exp)
-          ((_macro?_ exp)
-           (cons (car exp)
-                 (improper-map _expand_ (cdr exp))))
+          (if (not (eq? (car exp) 'quote))
+              (begin
+                (set! exp ((_macro?_ exp) exp))
+                (cons (_expand_ (car exp))
+                      (improper-map _expand_ (cdr exp))))
+              exp)
           exp)))
 
 (define (load-with-macros filename)

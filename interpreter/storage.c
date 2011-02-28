@@ -28,7 +28,7 @@ struct object_t empty = { .type = Cons,
                                                 .cdr = NULL } } };
 object_t NIL = &empty;
 
-#define HEAPSIZE 100000 /* this is managed memory */
+#define HEAPSIZE 1000000 /* this is managed memory */
 
 static object_t heap[HEAPSIZE] = {NULL};
 static int freeptr = 0;

@@ -17,10 +17,10 @@ object_t load_file(char *filename, object_t *env) {
   return eval(exp, env);
 }
 
-/* Top-level file, implements the REPL */
+/* Top-level file, implements the REPL 
 int main(int argc, char **argv) {
   init_heap();
-  global_env = init_global();  /* initialize global environment */
+  global_env = init_global();
   init_symbols();
 
   if(argc > 1) {
@@ -31,3 +31,4 @@ int main(int argc, char **argv) {
     }
   }
 }
+*/

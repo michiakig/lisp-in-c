@@ -87,10 +87,13 @@ object_t primitive_stringp(object_t argl) {
 }
 
 object_t primitive_numberp(object_t argl) {
-  char * s = symbol_name(obj_get_symbol(car(argl)));
-  if(all_digits(s))
-    return obj_new_symbol("#t");
-  else
+  if(issymbol(car(argl))) {
+    char * s = symbol_name(obj_get_symbol(car(argl)));
+    if(all_digits(s))
+      return obj_new_symbol("#t");
+    else
+      return obj_new_symbol("#f");
+  } else
     return obj_new_symbol("#f");
 }
 
@@ -192,7 +195,12 @@ object_t num_primitive(object_t argl, double (*f) (double, double)) {
     argl = cdr(argl);
   }
   s = malloc(sizeof(char)*100); /* TODO: calculate the num digits */
-  sprintf(s, "%f", result);
+  int i = (int)result;
+  if(i == result)
+    sprintf(s, "%d", i);
+  else
+    sprintf(s, "%f", result);
+
   object_t ret = obj_new_symbol(s);
   free(s);
   return ret;

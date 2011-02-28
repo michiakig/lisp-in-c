@@ -15,6 +15,11 @@
 
 (define (list . rest) rest)
 
+(define (length lst)
+  (if (null? lst)
+      0
+      (+ 1 (length (cdr lst)))))
+
 (define (not x)
   (if x #f #t))
 
@@ -69,3 +74,26 @@
   (if (null? lst)
       acc
       (reduce op (cdr lst) (op (car lst) acc))))
+
+(define (for-each fn lst)
+  (if (null? lst)
+      'done
+      (begin
+        (fn (car lst))
+        (for-each fn (cdr lst)))))
+
+(define (reverse lst)
+  (define (reverse-i acc lst)
+    (if (null? lst)
+        acc
+        (reverse-i (cons (car lst) acc) (cdr lst))))
+  (reverse-i () lst))
+
+(define (position elt lst)
+  (define (position-i n elt lst)
+    (if (null? lst)
+        #f
+        (if (eq? elt (car lst))
+            n
+            (position-i (+ n 1) elt (cdr lst)))))
+  (position-i 0 elt lst))
