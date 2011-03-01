@@ -20,12 +20,16 @@ int iscons(object_t);
 int issymbol(object_t);
 int isstring(object_t);
 int isproc(object_t);
+int isnum(object_t);
 
-proc_t obj_get_proc(object_t p);
+proc_t obj_get_proc(object_t);
 object_t obj_new_proc(proc_t);
 
 object_t obj_new_symbol(char *);
 symbol_t obj_get_symbol(object_t);
+
+object_t obj_new_number(int);
+int obj_get_number(object_t);
 
 object_t obj_new_string(char *);
 char *obj_get_string(object_t);

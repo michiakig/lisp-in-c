@@ -3,11 +3,12 @@
 #include <stdlib.h>
 
 #include "eval.h"
-#include "storage.h"
+#include "apply.h"
 #include "syntax.h"
+
+#include "storage.h"
 #include "env.h"
 #include "types.h"
-#include "apply.h"
 
 object_t eval_loop(object_t, object_t *);
 object_t eval_define(object_t, object_t*);

@@ -7,9 +7,10 @@
 #include <ctype.h> /* for isspace */
 
 #include "reader.h"
-#include "../storage.h"
-#include "../lib/list.h"
-#include "../lib/str_utils.h"
+#include "storage.h"
+
+#include "lib/list.h"
+#include "lib/str_utils.h"
 
 #define MAX_LINE 100
 
@@ -102,8 +103,12 @@ object_t parse_sexp2(char **in, object_t current) {
 
   case Symbol:
   case String:
-    if(k == Symbol)
-      s = obj_new_symbol(buf);
+    if(k == Symbol) {
+      if(all_digits(buf))
+        s = obj_new_number(atoi(buf));
+      else
+        s = obj_new_symbol(buf);
+    }
     else if(k == String)
       s = obj_new_string(buf);
 

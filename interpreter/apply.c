@@ -4,14 +4,62 @@
 #include <math.h>
 #include <assert.h>
 
-#include "types.h"
+#include "eval.h"
 #include "apply.h"
+
 #include "storage.h"
 #include "env.h"
 #include "obarray.h"
-#include "eval.h"
-#include "runtime/reader.h"
+#include "types.h"
+#include "reader.h"
+
 #include "lib/str_utils.h"
+
+extern object_t global_env;
+object_t read_file(char *);
+extern void print_sequence(object_t);
+
+
+object_t init_global() {
+  object_t env = NIL;
+  object_t primitives[] = {
+    obj_new_symbol("+"),         obj_new_primitive(&primitive_add),
+    obj_new_symbol("*"),         obj_new_primitive(&primitive_multiply),
+    obj_new_symbol("-"),         obj_new_primitive(&primitive_subtract),
+    obj_new_symbol("/"),         obj_new_primitive(&primitive_divide),
+    obj_new_symbol("<"),         obj_new_primitive(&primitive_lessthan),
+    obj_new_symbol(">"),         obj_new_primitive(&primitive_greaterthan),
+    obj_new_symbol("="),         obj_new_primitive(&primitive_equals),
+    obj_new_symbol("cons"),      obj_new_primitive(&primitive_cons),
+    obj_new_symbol("car"),       obj_new_primitive(&primitive_car),
+    obj_new_symbol("cdr"),       obj_new_primitive(&primitive_cdr),
+    obj_new_symbol("null?"),     obj_new_primitive(&primitive_isnull),
+    obj_new_symbol("eq?"),       obj_new_primitive(&primitive_eq),
+    obj_new_symbol("set-cdr!"),  obj_new_primitive(&primitive_set_cdr),
+    obj_new_symbol("set-car!"),  obj_new_primitive(&primitive_set_car),
+    obj_new_symbol("symbol?"),   obj_new_primitive(&primitive_symbolp),
+    obj_new_symbol("cons?"),     obj_new_primitive(&primitive_consp),
+    obj_new_symbol("load"),      obj_new_primitive(&primitive_load),
+    obj_new_symbol("print"),     obj_new_primitive(&primitive_print),
+    obj_new_symbol("eval"),      obj_new_primitive(&primitive_eval),
+    obj_new_symbol("apply"),     obj_new_primitive(&primitive_apply),
+    obj_new_symbol("read"),      obj_new_primitive(&primitive_read),
+    obj_new_symbol("read-file"), obj_new_primitive(&primitive_read_file),
+    obj_new_symbol("quit"),      obj_new_primitive(&primitive_quit),
+    obj_new_symbol("error"),     obj_new_primitive(&primitive_error),
+    obj_new_symbol("string?"),   obj_new_primitive(&primitive_stringp),
+    obj_new_symbol("number?"),   obj_new_primitive(&primitive_numberp),
+    obj_new_symbol("file-append"),    obj_new_primitive(&primitive_file_append),
+    obj_new_symbol("symbol->string"), obj_new_primitive(&primitive_symbol2string),
+    obj_new_symbol("number->string"), obj_new_primitive(&primitive_number2string)
+  };
+
+  int i;
+  for(i = 0; i < 58; i+=2)
+    env = define_variable(primitives[i], primitives[i+1], env);
+
+  return env;
+}
 
 struct proc_t {
   object_t (*fn) (object_t);
@@ -27,11 +75,6 @@ int isprimitiveproc(proc_t p) {
 int iscompoundproc(proc_t p) {
   return p->fn == NULL;
 }
-
-extern object_t global_env;
-extern object_t load_file(char *, object_t *);
-object_t read_file(char *);
-extern void print_sequence(object_t);
 
 int file_append(char *string, char *filename) {
   FILE *f = fopen(filename, "a");
@@ -51,13 +94,18 @@ object_t primitive_file_append(object_t argl) {
     return obj_new_symbol("#f");
 }
 
+object_t load_file(char *filename, object_t *env) {
+  object_t exp = read_file(filename);
+  return eval(exp, env);
+}
+
 object_t primitive_read_file(object_t argl) {
   object_t seq = read_file(obj_get_string(car(argl)));
   return seq;
 }
 
 object_t primitive_load(object_t argl) {
-  object_t val = load_file(obj_get_string(car(argl)), &global_env);
+  load_file(obj_get_string(car(argl)), &global_env);
   return obj_new_symbol("loaded.");
 }
 
@@ -66,6 +114,20 @@ object_t primitive_consp(object_t argl) {
     return obj_new_symbol("#t");
   else
     return obj_new_symbol("#f");
+}
+
+object_t primitive_number2string(object_t argl) {
+  int i = obj_get_number(car(argl));
+  char *s;
+  if(i == 0)
+    s = malloc(sizeof(*s) * 1);
+  else
+    s = malloc(sizeof(*s) * (int)floor(log10(i)) + 1);
+
+  sprintf(s, "%d", i);
+  object_t ret =  obj_new_string(s);
+  free(s);
+  return ret;
 }
 
 object_t primitive_symbol2string(object_t argl) {
@@ -87,13 +149,9 @@ object_t primitive_stringp(object_t argl) {
 }
 
 object_t primitive_numberp(object_t argl) {
-  if(issymbol(car(argl))) {
-    char * s = symbol_name(obj_get_symbol(car(argl)));
-    if(all_digits(s))
+  if(isnum(car(argl)))
       return obj_new_symbol("#t");
-    else
-      return obj_new_symbol("#f");
-  } else
+  else
     return obj_new_symbol("#f");
 }
 
@@ -143,8 +201,6 @@ object_t primitive_set_cdr(object_t argl) {
   return obj_new_symbol("ok");
 }
 
-
-
 object_t primitive_cons(object_t argl) {
   object_t a = car(argl);
   object_t d = car(cdr(argl));
@@ -165,56 +221,53 @@ object_t primitive_eq(object_t argl) {
   object_t a1 = car(argl);
   object_t a2 = car(cdr(argl));
 
-  if(obj_symbol_cmp(a1, a2))
+  int result;
+
+  if(issymbol(a1) && issymbol(a2))
+    result = obj_symbol_cmp(a1, a2);
+  else if(isnum(a1) && isnum(a2))
+    result = (obj_get_number(a1) == obj_get_number(a2));
+  else
+    result = 0;
+
+  if(result)
     return obj_new_symbol("#t");
   else
     return obj_new_symbol("#f");
 }
+  
 
 /* Wrappers around built-in C arithmetic operators */
-double add(double a1, double a2) { return a1 + a2; }
-double multiply(double a1, double a2) { return a1 * a2; }
-double subtract(double a1, double a2) { return a1 - a2; }
-double divide(double a1, double a2) { return a1 / a2; }
+int add(int a1, int a2) { return a1 + a2; }
+int multiply(int a1, int a2) { return a1 * a2; }
+int subtract(int a1, int a2) { return a1 - a2; }
+int divide(int a1, int a2) { return a1 / a2; }
 
-int lessthan(double a1, double a2) { return a1 < a2; }
-int greaterthan(double a1, double a2) { return a1 > a2; }
-int equals(double a1, double a2) { return a1 == a2; }
+int lessthan(int a1, int a2) { return a1 < a2; }
+int greaterthan(int a1, int a2) { return a1 > a2; }
+int equals(int a1, int a2) { return a1 == a2; }
 
 /* Fold (left) across an argument list, applying one of the num wrappers above */
-object_t num_primitive(object_t argl, double (*f) (double, double)) {
-  char *s = symbol_name(obj_get_symbol(car(argl)));
+object_t num_primitive(object_t argl, int (*f) (int, int)) {
+  int result = obj_get_number(car(argl));
   argl = cdr(argl);
-  double result = atof(s);
-  double arg;
-  object_t a;
+  int arg;
   while(!isnull(argl)) {
-    s = symbol_name(obj_get_symbol(car(argl)));
-    arg = atof(s);
+    arg = obj_get_number(car(argl));
     result = f(result, arg);
     argl = cdr(argl);
   }
-  s = malloc(sizeof(char)*100); /* TODO: calculate the num digits */
-  int i = (int)result;
-  if(i == result)
-    sprintf(s, "%d", i);
-  else
-    sprintf(s, "%f", result);
-
-  object_t ret = obj_new_symbol(s);
-  free(s);
+  object_t ret = obj_new_number(result);
   return ret;
 }
 
-object_t cmp_primitive(object_t argl, int (*f) (double, double)) {
-  char *s = symbol_name(obj_get_symbol(car(argl)));
+object_t cmp_primitive(object_t argl, int (*f) (int, int)) {
+  int arg1 = obj_get_number(car(argl));
   argl = cdr(argl);
-  double arg1 = atof(s);
-  double arg2;
+  int arg2;
   object_t ret;
   while(!isnull(argl)) {
-    s = symbol_name(obj_get_symbol(car(argl)));
-    arg2 = atof(s);
+    arg2 = obj_get_number(car(argl));
     if(!f(arg1, arg2)) {
       ret = obj_new_symbol("#f");
       return ret;

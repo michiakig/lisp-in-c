@@ -1,52 +1,10 @@
 #include <stdio.h>
+
 #include "types.h"
 #include "storage.h"
 #include "env.h"
-#include "apply.h"
 
-extern void load_file(char *filename, object_t *env);
-
-object_t init_global() {
-  object_t env = NIL;
-
-  object_t primitives[] = {
-    obj_new_symbol("+"),        obj_new_primitive(&primitive_add),
-    obj_new_symbol("*"),        obj_new_primitive(&primitive_multiply),
-    obj_new_symbol("-"),        obj_new_primitive(&primitive_subtract),
-    obj_new_symbol("/"),        obj_new_primitive(&primitive_divide),
-    obj_new_symbol("<"),        obj_new_primitive(&primitive_lessthan),
-    obj_new_symbol(">"),        obj_new_primitive(&primitive_greaterthan),
-    obj_new_symbol("="),        obj_new_primitive(&primitive_equals),
-    obj_new_symbol("cons"),     obj_new_primitive(&primitive_cons),
-    obj_new_symbol("car"),      obj_new_primitive(&primitive_car),
-    obj_new_symbol("cdr"),      obj_new_primitive(&primitive_cdr),
-    obj_new_symbol("null?"),     obj_new_primitive(&primitive_isnull),
-    obj_new_symbol("eq?"),      obj_new_primitive(&primitive_eq),
-    obj_new_symbol("set-cdr!"), obj_new_primitive(&primitive_set_cdr),
-    obj_new_symbol("set-car!"), obj_new_primitive(&primitive_set_car),
-    obj_new_symbol("symbol?"),  obj_new_primitive(&primitive_symbolp),
-    obj_new_symbol("cons?"),    obj_new_primitive(&primitive_consp),
-    obj_new_symbol("load"),     obj_new_primitive(&primitive_load),
-    obj_new_symbol("print"),    obj_new_primitive(&primitive_print),
-    obj_new_symbol("eval"),     obj_new_primitive(&primitive_eval),
-    obj_new_symbol("apply"),    obj_new_primitive(&primitive_apply),
-    obj_new_symbol("read"),     obj_new_primitive(&primitive_read),
-    obj_new_symbol("read-file"),     obj_new_primitive(&primitive_read_file),
-    obj_new_symbol("quit"),     obj_new_primitive(&primitive_quit),
-    obj_new_symbol("error"),     obj_new_primitive(&primitive_error),
-    obj_new_symbol("string?"),     obj_new_primitive(&primitive_stringp),
-    obj_new_symbol("number?"),     obj_new_primitive(&primitive_numberp),
-
-    obj_new_symbol("file-append"),     obj_new_primitive(&primitive_file_append),
-    obj_new_symbol("symbol->string"),     obj_new_primitive(&primitive_symbol2string)
-  };
-
-  int i;
-  for(i = 0; i < 56; i+=2)
-    env = define_variable(primitives[i], primitives[i+1], env);
-
-  return env;
-}
+object_t global_env;
 
 /* lookup var in an alist or plist */
 object_t assoc(object_t var, object_t list) {
@@ -97,7 +55,6 @@ object_t define_variable(object_t var, object_t val, object_t env) {
   return env;
 }
 
-/* TODO: fix this after figuring out set-cdr! and set-car! */
 object_t set_variable(object_t var, object_t val, object_t env) {
   object_t binding = lookup_binding(var, env);
   if(isnull(binding)) {

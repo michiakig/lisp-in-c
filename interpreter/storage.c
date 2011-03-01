@@ -7,7 +7,7 @@
 #include "obarray.h"
 #include "types.h"
 
-enum kind { Symbol, Cons, Procedure, String };
+enum kind { Symbol, Cons, Procedure, String, Number };
 
 struct object_t {
   enum kind type;
@@ -19,6 +19,7 @@ struct object_t {
     symbol_t symbolData;
     proc_t procData;
     char *stringData;
+    int numberData;
   } data;
 };
 
@@ -48,11 +49,25 @@ object_t obj_new() {
   }
 }
 
+object_t obj_new_number(int n) {
+  object_t new = obj_new();
+  new->type = Number;
+  new->data.numberData = n;
+  return new;
+}
+
+int obj_get_number(object_t obj) {
+  assert(obj->type == Number);
+  return obj->data.numberData;
+}
+
 int obj_symbol_cmp(object_t a, object_t b) {
+  assert(a->type == Symbol && b->type == Symbol);
   return a->data.symbolData == b->data.symbolData;
 }
 
 proc_t obj_get_proc(object_t p) {
+  assert(p->type = Procedure);
   return p->data.procData;
 }
 
@@ -65,8 +80,6 @@ object_t obj_new_proc(proc_t p) {
 
 object_t obj_new_symbol(char *s) {
   symbol_t symbol = symbol_intern(s);
-
-  /* this is essentially a memory leak */
   object_t new = obj_new();
   new->type = Symbol;
   new->data.symbolData = symbol;
@@ -107,6 +120,10 @@ symbol_t obj_get_symbol(object_t obj) {
 char *obj_get_string(object_t obj) {
   assert(isstring(obj));
   return obj->data.stringData;
+}
+
+int isnum(object_t obj) {
+  return obj->type == Number;
 }
 
 int isstring(object_t obj) {
@@ -159,7 +176,9 @@ void set_cdr(object_t obj, object_t new) {
 
 /* prints an object_t, either a symbol or a cons (as an s-exp) */
 void print_object(object_t obj) {
-  if(issymbol(obj))
+  if(isnum(obj))
+    printf("%d", obj_get_number(obj));
+  else if(issymbol(obj))
     printf("%s", symbol_name(obj_get_symbol(obj)));
   else if(isstring(obj))
     printf("\"%s\"", obj_get_string(obj));
@@ -168,9 +187,7 @@ void print_object(object_t obj) {
       printf("<proc>");
       /*    else */
       /*      printf("<compound proc>"); */
-  }
-
-  else if(iscons(obj)) {
+  } else if(iscons(obj)) {
     printf("(");
     while(!isnull(obj)) {
       print_object(car(obj));

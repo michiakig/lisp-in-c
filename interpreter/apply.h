@@ -2,6 +2,8 @@
 #define apply_included
 #include "types.h"
 
+object_t init_global();
+object_t load_file(char *, object_t *);
 object_t primitive_add(object_t);
 object_t primitive_multiply(object_t);
 object_t primitive_subtract(object_t);
@@ -35,6 +37,7 @@ object_t primitive_consp(object_t);
 
 object_t primitive_file_append(object_t);
 object_t primitive_symbol2string(object_t);
+object_t primitive_number2string(object_t);
 
 int isprimitiveproc(proc_t);
 int iscompoundproc(proc_t);

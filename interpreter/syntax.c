@@ -37,9 +37,9 @@ int boolean_literal(object_t exp) {
 int self_evaluating(object_t exp) {
   return isnull(exp) ||
     isstring(exp) ||
+    isnum(exp) || 
     (issymbol(exp) &&
-     (all_digits(symbol_name(obj_get_symbol(exp))) ||
-      boolean_literal(exp)));
+      boolean_literal(exp));
 }
 
 /* variables are symbols which are not self-evaluating */
