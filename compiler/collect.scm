@@ -1,6 +1,4 @@
 
-
-
 (define (collect exp)
   (cond ((null? exp) ())
         ((and (not (cons? exp))
@@ -28,4 +26,8 @@
          (list 'define
                (make-user-symbol-placeholder (definition-variable exp))
                (definition-value exp)))
+        ((assignment? exp)
+         (list 'set!
+               (make-user-symbol-placeholder (definition-variable exp))
+               (assignment-value exp)))
         (else exp)))

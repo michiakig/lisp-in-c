@@ -17,15 +17,11 @@ object_t pop() {
 extern object_t entry(void);
 
 int obj2label(object_t obj) {
-  char *num = symbol_name(obj_get_symbol(obj));
-  int label = atoi(num);
-  return label;
+  return obj_get_number(obj);
 }
 
 object_t label2obj(int label) {
-  char *s = malloc(sizeof(char)*100); /* TODO: calculate the num digits */
-  sprintf(s, "%d", label);
-  return obj_new_symbol(s);
+  return obj_new_number(label);
 }
 
 int main(int argc, char **argv) {

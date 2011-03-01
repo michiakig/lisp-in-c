@@ -7,7 +7,7 @@
       'done
       (begin
         (file-append "object_t symbols[" f)
-        (file-append (symbol->string (length symbols)) f)
+        (file-append (number->string (length symbols)) f)
         (file-append "];\n" f)
         (file-append "void init(void){\n" f)
         (file-append "int s=0;\n" f)
@@ -34,15 +34,15 @@
 
 (define (emit-constant const filename)
   (cond ((number? const)
-         (file-append "obj_new_symbol(\"" filename)
-         (file-append (symbol->string const) filename)
-         (file-append "\")" filename))
+         (file-append "obj_new_number(" filename)
+         (file-append (number->string const) filename)
+         (file-append ")" filename))
 
         (error "ERROR constant not a number")))
 
 (define (emit-user-symbol index filename)
   (file-append "symbols[" filename)
-  (file-append (symbol->string index) filename)
+  (file-append (number->string index) filename)
   (file-append "]" filename))
 
 (define (emit-statement statement filename)

@@ -7,14 +7,20 @@
 (define user-symbols ())
 
 (define (compile exp target linkage)
-  (set! user-symbols (append user-symbols (list-difference (collect exp) user-symbols)))
+  (set! user-symbols (append user-symbols
+                             (list-difference (collect exp) user-symbols)))
   (set! exp (replace-user-symbols exp))
+
+  (print "exp: ")
   (print exp)
   (print "\n")
+  
   (cond ((self-evaluating? exp)
          (compile-self-evaluating exp target linkage))
         ((definition? exp)
          (compile-definition exp target linkage))
+        ((assignment? exp)
+         (compile-assignment exp target linkage))
         ((variable? exp)
          (compile-variable exp target linkage))
         ((begin? exp)
@@ -77,6 +83,19 @@
     (list target)
     (make-assignment-statement target
                                (make-lookup-expression exp '(reg env))))))
+
+(define (compile-assignment exp target linkage)
+  (let ((var (assignment-variable exp))
+        (get-value-code
+         (compile (assignment-value exp) '(reg val) 'next)))
+    (end-with-linkage linkage
+     (preserving '(env)
+      get-value-code
+      (make-instruction-sequence
+       '(env val)
+       (list target)
+       (make-perform-statement
+        "set_variable" var '(reg val) '(reg env)))))))
 
 (define (compile-definition exp target linkage)
   (let ((var (definition-variable exp))

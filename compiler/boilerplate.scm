@@ -2,10 +2,16 @@
   "
 #include \"runtime.h\"
 #include \"../interpreter/storage.h\"
+#include \"../interpreter/apply.h\"
 ")
 
 (define entry-pre
-  "object_t entry(void) {\npc=START;\nreg[continue]=label2obj(END);\ninit();\n")
+  "object_t entry(void) {
+pc=START;
+reg[continue]=label2obj(END);
+init();
+reg[env]=init_global();
+")
 
 (define entry-post "return reg[val]; \n}\n")
 

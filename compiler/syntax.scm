@@ -7,6 +7,10 @@
 
 (define (tagged-list? tag lst) (and (cons? lst) (eq? tag (car lst))))
 
+(define (assignment? exp) (tagged-list? 'set! exp))
+(define (assignment-variable exp) (cadr exp))
+(define (assignment-value exp) (caddr exp))
+
 (define (definition? exp) (tagged-list? 'define exp))
 (define (definition-variable exp) (cadr exp))
 (define (definition-value exp) (caddr exp))
