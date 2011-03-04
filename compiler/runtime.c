@@ -3,18 +3,22 @@
 #include <stdlib.h>
 #include "runtime.h"
 #include "../interpreter/storage.h"
+
 int pc;
+int flag;
 object_t reg[7] = {0};
 object_t stack[STACKSIZE] = {0};
 object_t *sp = stack;
+
+extern object_t entry(void);
+
 void push(object_t x) {
   *sp = x; sp++;
 }
+
 object_t pop() {
   sp--; return *sp;
 }
-
-extern object_t entry(void);
 
 int obj2label(object_t obj) {
   return obj_get_number(obj);
