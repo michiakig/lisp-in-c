@@ -1,0 +1,28 @@
+
+Expressions:
+
+(reg foo) --> reg[foo];
+
+(label foo) --> label(foo);
+
+(const foo) --> obj_new_symbol("foo");
+(const 123) --> obj_new_number(123);
+
+Statements:
+
+(assign foo (reg bar)) --> reg[foo] = reg[bar];
+(assign foo (const 123)) --> reg[foo] = obj_new_number(123);
+(assign foo (op bar) baz qux) --> reg[foo] = bar(baz, qux);
+
+labelfoo --> case labelfoo:
+
+(goto (label foo)) --> GOTO(foo);
+
+(test (op false?) (reg val)) -- > if(falsey(reg[val])){flag=TRUE;}
+
+(branch (label foo)) --> if(flag){GOTO(label(foo));}
+
+(save foo) --> save(reg[foo]);
+
+(restore foo) --> reg[foo]=restore();
+
