@@ -6,11 +6,8 @@ http://scheme2006.cs.uchicago.edu/11-ghuloum.pdf
 http://www.iro.umontreal.ca/~boucherd/mslug/meetings/20041020/minutes-en.html
 https://github.com/darius/ichbins
 
-
 1. Doesn't handle two s-expression on a one line, ignores the second one.
-2. No numeric types: numbers are just symbols. Arithmetic is done by converting symbols to C doubles via strtod and back to strings via sprintf. (I know!)
 3. Primitives don't check for arity, so (quote foo bar) is just foo, and not an error.
 1. No tail-call optimization
 1. No garbage collection
-1. No user-defined macros
-4. No reader macros, so 'foo doesn't work.
+1. No user-defined macros, altho a macro system is in place for "system" macros
