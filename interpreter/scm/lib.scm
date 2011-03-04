@@ -12,6 +12,9 @@
 (define (cddar x) (cdr (cdr (car x))))
 (define (cdddr x) (cdr (cdr (cdr x))))
 
+(define pair? cons?)
+(define false '#f)
+(define true '#t)
 
 (define (list . rest) rest)
 
