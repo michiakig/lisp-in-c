@@ -37,16 +37,19 @@
           lst
           (memq item (cdr lst)))))
 
-(define (append! l1 l2)
-  (if (null? (cdr l1))
-      (set-cdr! l1 l2)
-      (append! (cdr l1) l2)))
+(define (append l . rest)
+  (if (null? rest)
+      l
+      (if (null? (cdr rest))
+          (append2 l (car rest))
+          (apply append (cons (append2 l (car rest))
+                              (cdr rest))))))
 
-(define (append l1 l2)
+(define (append2 l1 l2)
   (if (null? l1)
       l2
       (cons (car l1)
-            (append (cdr l1) l2))))
+            (append2 (cdr l1) l2))))
 
 (define (filter p lst)
   (if (null? lst)
@@ -97,3 +100,11 @@
             n
             (position-i (+ n 1) elt (cdr lst)))))
   (position-i 0 elt lst))
+
+(define (string-append-n s . args)
+  (if (null? args)
+      s
+      (if (null? (cdr args))
+          (string-append s (car args))
+          (apply string-append-n (cons (string-append s (car args))
+                                       (cdr args))))))

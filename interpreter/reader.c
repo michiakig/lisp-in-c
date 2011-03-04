@@ -14,6 +14,7 @@
 
 #define MAX_LINE 100
 
+object_t wrap(char **in, object_t current, char *type);
 object_t parse_sexp2(char **in, object_t current);
 enum kind next_token(char **, char **);
 char *get_symbol(char **);
@@ -79,27 +80,11 @@ object_t parse_sexp2(char **in, object_t current) {
 
   
   case Single: /* following are reader-macros */
-    rest = parse_sexp2(in, NULL);
-    object_t ret = cons(obj_new_symbol("quote"), cons(rest, NIL));
-    if(current == NULL) {
-      return ret;
-    } else if(current == NIL) {
-      current = cons(ret, NIL);
-    } else {
-      storage_append(ret, current);
-    }
-
-    return parse_sexp2(in, current);
-
-    /*
+    return wrap(in, current, "quote");
   case Back:
-    rest = parse_sexp2(in, NULL);
-    return cons(obj_new_symbol("quasiquote"), cons(rest, NIL));
-
+    return wrap(in, current, "quasiquote");
   case Comma:
-    rest = parse_sexp2(in, NULL);
-    return cons(obj_new_symbol("unquote"), cons(rest, NIL));
-    */
+    return wrap(in, current, "unquote");
 
   case Symbol:
   case String:
@@ -122,6 +107,23 @@ object_t parse_sexp2(char **in, object_t current) {
     }
   }
 }
+
+object_t wrap(char **in, object_t current, char *type) {
+    object_t rest = parse_sexp2(in, NULL);
+    object_t ret = cons(obj_new_symbol(type), cons(rest, NIL));
+
+    if(current == NULL) {
+      return ret;
+    } else if(current == NIL) {
+      current = cons(ret, NIL);
+    } else {
+      storage_append(ret, current);
+    }
+
+    return parse_sexp2(in, current);
+}
+
+
 
 /* assumes **ch is a " and reads up to the next (unescaped) ",
    returning a copy of the contents of the string */

@@ -37,6 +37,8 @@ object_t primitive_consp(object_t);
 
 object_t primitive_file_append(object_t);
 object_t primitive_symbol2string(object_t);
+object_t primitive_string2symbol(object_t);
+object_t primitive_string_append(object_t);
 object_t primitive_number2string(object_t);
 
 int isprimitiveproc(proc_t);

@@ -1,4 +1,19 @@
 
+(define (_expandquasi_ exp)
+  (define (_expandquasir_ exp)
+    (if (symbol? exp)
+        (list 'quote exp)
+        (cons 'list 
+              (map (lambda (e)
+                     (if (cons? e)
+                         (if (eq? (car e) 'unquote)
+                             (cadr e)
+                             (_expandquasir_ e))
+                         (list 'quote e)))
+                   exp))))
+  (_expandquasir_ (cadr exp)))
+
+
 (define (_expandand_ exp)
   (define (_expandandr_ operands)
     (if (null? operands)
@@ -52,7 +67,8 @@
                   (cons 'let _expandlet_)
                   (cons 'cond _expandcond_)
                   (cons 'and _expandand_)
-                  (cons 'or _expandor_)))
+                  (cons 'or _expandor_)
+                  (cons 'quasiquote _expandquasi_)))
 
 (define _identity_ (lambda (x) x))
 

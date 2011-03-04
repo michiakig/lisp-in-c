@@ -51,11 +51,13 @@ object_t init_global() {
     obj_new_symbol("number?"),   obj_new_primitive(&primitive_numberp),
     obj_new_symbol("file-append"),    obj_new_primitive(&primitive_file_append),
     obj_new_symbol("symbol->string"), obj_new_primitive(&primitive_symbol2string),
+    obj_new_symbol("string->symbol"), obj_new_primitive(&primitive_string2symbol),
+    obj_new_symbol("string-append"), obj_new_primitive(&primitive_string_append),
     obj_new_symbol("number->string"), obj_new_primitive(&primitive_number2string)
   };
 
   int i;
-  for(i = 0; i < 58; i+=2)
+  for(i = 0; i < 62; i+=2)
     env = define_variable(primitives[i], primitives[i+1], env);
 
   return env;
@@ -130,8 +132,25 @@ object_t primitive_number2string(object_t argl) {
   return ret;
 }
 
+object_t primitive_string_append(object_t argl) {
+  char *s1 = obj_get_string(car(argl));
+  char *s2 = obj_get_string(car(cdr(argl)));
+  int len = strlen(s1) + strlen(s2);
+  char *s = malloc(sizeof(*s) * (len)+1);
+  s[0] = '\0';
+  strcat(s, s1);
+  strcat(s, s2);
+  object_t ret = obj_new_string(s);
+  free(s);
+  return ret;
+}
+
 object_t primitive_symbol2string(object_t argl) {
   return obj_new_string(symbol_name(obj_get_symbol(car(argl))));
+}
+
+object_t primitive_string2symbol(object_t argl) {
+  return obj_new_symbol(obj_get_string(car(argl)));
 }
 
 object_t primitive_symbolp(object_t argl) {
