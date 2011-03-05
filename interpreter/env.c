@@ -68,15 +68,6 @@ object_t set_variable(object_t var, object_t val, object_t env) {
 
 /* match up vars and vals, and cons the resulting frame onto the env */
 object_t extend_environment(object_t vars, object_t vals, object_t env) {
-  /*
-  printf("vars: ");
-  print_object(vars);
-
-  printf("\n\nvals: ");
-  print_object(vals);
-
-  printf("\n\n");
-  */
   object_t frame = NIL;
   while(!isnull(vars) && !isnull(vals)) {
     if(issymbol(vars)) {
@@ -93,7 +84,7 @@ object_t extend_environment(object_t vars, object_t vals, object_t env) {
   if(isnull(vals) && issymbol(vars))
     frame = cons(cons(vars, vals), frame);
   else if(!isnull(vars) || !isnull(vals)) {
-    printf("ERROR extend_environment: mismatching number of vars and vals.\n");
+    printf("ERROR extend_environment: mismatching number of vars and vals.");
     return NIL;
   }
   env =  cons(frame, env);
