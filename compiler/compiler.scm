@@ -3,8 +3,20 @@
 (load-with-macros "ch5-compiler.scm")
 (load-with-macros "register-syntax.scm")
 
+(load-with-macros "boilerplate.scm")
+(load-with-macros "pretty-print.scm")
+
 (define *labels* ())
-(define *labels-count* 0)
+(define *labels-count* 1) ; labels start with 2, since END=0, START=1
+
+(define (run-visual-test exp)
+  (print "\n-- ")
+  (print exp)
+  (print "\n\n")
+  (pretty-print-reg (caddr (compile exp 'val 'return)))
+  (print "\n")
+  (pretty-print-c (lisp->c exp)))
+
 (define (make-label-define name)
   (set! *labels-count* (+ 1 *labels-count*))
   (cons name *labels-count*))
@@ -15,26 +27,35 @@
         ((number? x) (number->string x))
         (else "?")))
 
+(define (labels->defines labels)
+  (map (lambda (label)
+              (string-append-n
+               "#define "
+               (symbol->string (car label))
+               " "
+               (number->string (cdr label))
+               "\n"))
+       labels))
+
+(define (compile-and-emit exp filename)
+  (pretty-print-c (lambda (s)
+                    (file-append s filename))
+                  (lisp->c exp)))
+
 (define (lisp->c exp)
   (set! *labels* ())
-  (set! *labels-count* 0)
-  
+  (set! *labels-count* 1)
   (let ((compiled (compile exp 'val 'return)))
-    ;; (for-each (lambda (label)
-    ;;             (print "#define ")
-    ;;             (print (car label))
-    ;;             (print " ")
-    ;;             (print (cdr label))
-    ;;             (print "\n")))
-    (map (lambda (inst)
-           (apply string-append-n inst))
-         (map (lambda (inst)
-                (map make-string (flatten (inst->c inst))))
-              (caddr compiled)))
-    ;; (for-each (lambda (s)
-    ;;             (print s))
-    ;;           compiled)
-    ))
+    
+    (pretty-print-reg (caddr compiled))
+    
+    (surround-with-boilerplate 
+     (map (lambda (inst)
+            (apply string-append-n inst))
+          (map (lambda (inst)
+                 (map make-string (flatten (inst->c inst))))
+               (caddr compiled)))
+     *labels*)))
 
 (define (insts->strings insts)
   (map (lambda (inst)
@@ -55,25 +76,25 @@
         ((reg? inst) (reg->c (reg-name inst)))
         ((const? inst) (const->c inst))
         
-        (else (list "???"))))
+        (else (error "ERROR unknown instruction!"))))
 
 ;; (test (op false?) (reg val)) -- > if(falsey(reg[val])) {flag=TRUE;}
 
 (define (test->c inst)
   (append
-   (list "if(")
+   (list "flag=")
    (opcall->c (opcall-op inst) (opcall-args inst))
-   (list "){flag=TRUE;}\n")))
+   (list ";\n")))
 
 ;; (branch (label foo)) --> if(flag){GOTO(label(foo));}
 (define (branch->c inst)
   (list "if(flag){GOTO(" (label-exp-name (branch-target inst)) ");}\n"))
 
 (define (save->c inst)
-  (list "save(" (inst->c (save-arg inst)) ");\n"))
+  (list "save(" (reg->c (save-arg inst)) ");\n"))
 
 (define (restore->c inst)
-  (list (inst->c (restore-target inst)) "=restore();\n"))
+  (list (reg->c (restore-target inst)) "=restore();\n"))
 
 (define (perform->c inst)
   (append
@@ -115,13 +136,14 @@
     (cond ((number? val) (list "obj_new_number(" val ")"))
           ((symbol? val) (list "obj_new_symbol(\"" val "\")"))
           ((string? val) (list "obj_new_string(\"" val "\")"))
+          ((null? val) (list "NIL"))
           ((cons? val)
            (list->cons-calls val)))))
 
 ; (a b c) --> "cons(a, cons(b, cons(c, NIL)))"
 (define (list->cons-calls lst)
   (if (null? (cdr lst))
-      (list "cons(" (car lst) ",NIL)")
-      (append (list "cons(" (car lst) ",")
+      (list "cons(obj_new_symbol(\"" (car lst) "\"),NIL)")
+      (append (list "cons(obj_new_symbol(\"" (car lst) "\"),")
               (list->cons-calls (cdr lst))
               (list ")"))))

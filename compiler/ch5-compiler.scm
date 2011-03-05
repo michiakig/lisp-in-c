@@ -77,7 +77,7 @@
 (define (compile-quoted exp target linkage)
   (end-with-linkage linkage
    (make-instruction-sequence '() (list target)
-    `((assign ,target (const ,(text-of-quotation exp)))))))
+    `((assign ,target (const ,(text_of_quotation exp)))))))
 
 (define (compile-variable exp target linkage)
   (end-with-linkage linkage
@@ -132,9 +132,9 @@
 ;; end of footnote
 
 (define (compile-if exp target linkage)
-  (let ((t-branch (make-label 'true-branch))
-        (f-branch (make-label 'false-branch))                    
-        (after-if (make-label 'after-if)))
+  (let ((t-branch (make-label 'true_branch))
+        (f-branch (make-label 'false_branch))                    
+        (after-if (make-label 'after_if)))
     (let ((consequent-linkage
            (if (eq? linkage 'next) after-if linkage)))
       (let ((p-code (compile (if-predicate exp) 'val 'next))
@@ -167,7 +167,7 @@
 
 (define (compile-lambda exp target linkage)
   (let ((proc-entry (make-label 'entry))
-        (after-lambda (make-label 'after-lambda)))
+        (after-lambda (make-label 'after_lambda)))
     (let ((lambda-linkage
            (if (eq? linkage 'next) after-lambda linkage)))
       (append-instruction-sequences
@@ -243,14 +243,14 @@
 ;;;applying procedures
 
 (define (compile-procedure-call target linkage)
-  (let ((primitive-branch (make-label 'primitive-branch))
-        (compiled-branch (make-label 'compiled-branch))
-        (after-call (make-label 'after-call)))
+  (let ((primitive-branch (make-label 'primitive_branch))
+        (compiled-branch (make-label 'compile_branch))
+        (after-call (make-label 'after_call)))
     (let ((compiled-linkage
            (if (eq? linkage 'next) after-call linkage)))
       (append-instruction-sequences
        (make-instruction-sequence '(proc) '()
-        `((test (op primitive-procedurep) (reg proc))
+        `((test (op primitive_procedurep) (reg proc))
           (branch (label ,primitive-branch))))
        (parallel-instruction-sequences
         (append-instruction-sequences
@@ -278,7 +278,7 @@
              (goto (reg val)))))
         ((and (not (eq? target 'val))
               (not (eq? linkage 'return)))
-         (let ((proc-return (make-label 'proc-return)))
+         (let ((proc-return (make-label 'proc_return)))
            (make-instruction-sequence '(proc) all-regs
             `((assign continue (label ,proc-return))
               (assign val (op compiled_procedure_entry)

@@ -1,6 +1,17 @@
+
+(define (surround-with-boilerplate code labels)
+  (flatten (list prelude
+                 (labels->defines labels)
+                 entry-pre
+                 while-switch-pre
+                 
+                 code
+                 
+                 while-switch-post
+                 entry-post)))
+
 (define prelude
-  "
-#include \"runtime.h\"
+  "#include \"runtime.h\"
 #include \"../interpreter/storage.h\"
 #include \"../interpreter/apply.h\"
 ")
@@ -9,7 +20,6 @@
   "object_t entry(void) {
 pc=START;
 reg[continue]=label2obj(END);
-init();
 reg[env]=init_global();
 ")
 
@@ -17,7 +27,6 @@ reg[env]=init_global();
 
 (define while-switch-pre
   "while(pc) {\njump: switch(pc) {\ncase START:\n")
+
 (define while-switch-post "}\n}\n")
 
-(define boilerplate-pre (list prelude entry-pre while-switch-pre))
-(define boilerplate-post (list while-switch-post entry-post))

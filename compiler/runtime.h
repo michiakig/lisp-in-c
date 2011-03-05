@@ -16,9 +16,19 @@ object_t label2obj(int);
 #define FALSE 0
 #define GOTO(label) do{pc=label; goto jump;}while(0)
 extern int truthy(object_t);
-void push(object_t);
-object_t pop();
+void save(object_t);
+object_t restore();
 extern int pc;
 extern int flag;
 extern int cont;
 extern object_t reg[];
+
+object_t lookup_variable_value(object_t, object_t);
+int primitive_procedurep(object_t);
+int falsep(object_t);
+object_t list(object_t);
+
+object_t compiled_procedure_env(object_t);
+object_t compiled_procedure_entry(object_t);
+object_t make_compiled_procedure(object_t, object_t);
+object_t apply_primitive_procedure(object_t, object_t);

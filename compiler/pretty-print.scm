@@ -1,9 +1,8 @@
 
 ;; pretty-print register machine code (or generated C code)
-(define (pretty-print-c lst)
+(define (pretty-print-c printfn lst)
   (for-each (lambda (x)
-              (print "  ")
-              (print x))
+              (printfn x))
             lst))
 
 ;; pretty-print register machine code
