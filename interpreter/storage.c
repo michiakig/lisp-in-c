@@ -67,7 +67,7 @@ int obj_symbol_cmp(object_t a, object_t b) {
 }
 
 proc_t obj_get_proc(object_t p) {
-  assert(p->type = Procedure);
+  assert(p->type == Procedure);
   return p->data.procData;
 }
 
