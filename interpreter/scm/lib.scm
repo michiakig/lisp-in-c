@@ -111,3 +111,14 @@
           (string-append s (car args))
           (apply string-append-n (cons (string-append s (car args))
                                        (cdr args))))))
+(define (flatten lst)
+  (if (null? lst)
+      ()
+      (if (cons? (car lst))
+          (append (flatten (car lst))
+                  (flatten (cdr lst)))
+          (cons (car lst)
+                (flatten (cdr lst))))))
+
+
+

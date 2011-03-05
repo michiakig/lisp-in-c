@@ -11,11 +11,11 @@
 
 ;;;;Then you can compile Scheme programs as shown in section 5.5.5
 
-;;**implementation-dependent loading of syntax procedures
-
-
-
 ;;;SECTION 5.5.1
+
+;; Changed op names in emitted register machine code to be more
+;; C-friendly: - becomes _, remove ! and ?
+
 
 (define (compile exp target linkage)
   (cond ((self-evaluating? exp)
@@ -83,7 +83,7 @@
   (end-with-linkage linkage
    (make-instruction-sequence '(env) (list target)
     `((assign ,target
-              (op lookup-variable-value)
+              (op lookup_variable_value)
               (const ,exp)
               (reg env))))))
 
@@ -95,7 +95,7 @@
      (preserving '(env)
       get-value-code
       (make-instruction-sequence '(env val) (list target)
-       `((perform (op set-variable-value!)
+       `((perform (op set_variable_value)
                   (const ,var)
                   (reg val)
                   (reg env))
@@ -109,7 +109,7 @@
      (preserving '(env)
       get-value-code
       (make-instruction-sequence '(env val) (list target)
-       `((perform (op define-variable!)
+       `((perform (op define_variable)
                   (const ,var)
                   (reg val)
                   (reg env))
@@ -147,7 +147,7 @@
          p-code
          (append-instruction-sequences
           (make-instruction-sequence '(val) '()
-           `((test (op false?) (reg val))
+           `((test (op falsep) (reg val))
              (branch (label ,f-branch))))
           (parallel-instruction-sequences
            (append-instruction-sequences t-branch c-code)
@@ -175,7 +175,7 @@
         (end-with-linkage lambda-linkage
          (make-instruction-sequence '(env) (list target)
           `((assign ,target
-                    (op make-compiled-procedure)
+                    (op make_compiled_procedure)
                     (label ,proc-entry)
                     (reg env)))))
         (compile-lambda-body exp proc-entry))
@@ -186,9 +186,9 @@
     (append-instruction-sequences
      (make-instruction-sequence '(env proc argl) '(env)
       `(,proc-entry
-        (assign env (op compiled-procedure-env) (reg proc))
+        (assign env (op compiled_procedure_env) (reg proc))
         (assign env
-                (op extend-environment)
+                (op extend_environment)
                 (const ,formals)
                 (reg argl)
                 (reg env))))
@@ -250,7 +250,7 @@
            (if (eq? linkage 'next) after-call linkage)))
       (append-instruction-sequences
        (make-instruction-sequence '(proc) '()
-        `((test (op primitive-procedure?) (reg proc))
+        `((test (op primitive-procedurep) (reg proc))
           (branch (label ,primitive-branch))))
        (parallel-instruction-sequences
         (append-instruction-sequences
@@ -262,7 +262,7 @@
           (make-instruction-sequence '(proc argl)
                                      (list target)
            `((assign ,target
-                     (op apply-primitive-procedure)
+                     (op apply_primitive_procedure)
                      (reg proc)
                      (reg argl)))))))
        after-call))))
@@ -273,7 +273,7 @@
   (cond ((and (eq? target 'val) (not (eq? linkage 'return)))
          (make-instruction-sequence '(proc) all-regs
            `((assign continue (label ,linkage))
-             (assign val (op compiled-procedure-entry)
+             (assign val (op compiled_procedure_entry)
                          (reg proc))
              (goto (reg val)))))
         ((and (not (eq? target 'val))
@@ -281,7 +281,7 @@
          (let ((proc-return (make-label 'proc-return)))
            (make-instruction-sequence '(proc) all-regs
             `((assign continue (label ,proc-return))
-              (assign val (op compiled-procedure-entry)
+              (assign val (op compiled_procedure_entry)
                           (reg proc))
               (goto (reg val))
               ,proc-return
@@ -289,7 +289,7 @@
               (goto (label ,linkage))))))
         ((and (eq? target 'val) (eq? linkage 'return))
          (make-instruction-sequence '(proc continue) all-regs
-          '((assign val (op compiled-procedure-entry)
+          '((assign val (op compiled_procedure_entry)
                         (reg proc))
             (goto (reg val)))))
         ((and (not (eq? target 'val)) (eq? linkage 'return))
