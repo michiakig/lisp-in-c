@@ -2,11 +2,10 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include "apply.h"
+
 #include "storage.h"
 #include "obarray.h"
 #include "types.h"
-#include "../compiler/runtime.h"
 
 enum kind { Symbol, Cons, Procedure, String, Number };
 
@@ -30,130 +29,24 @@ struct object_t empty = { .type = Cons,
                                                 .cdr = NULL } } };
 object_t NIL = &empty;
 
-/* special global variable for broken heart */
-struct object_t brokenheartdata = { .type = Cons,
-                                    .data = { .consData = { .car = NULL,
-                                                            .cdr = NULL } } };
-object_t brokenheart = &brokenheartdata;
-int isbrokenheart(object_t hrt) {
-  return hrt == brokenheart;
-}
+#define HEAPSIZE 1000000 /* this is managed memory */
 
-#define HEAPSIZE 100000
-#define NUM_REGISTERS 7
-
-object_t *the_heap;
-object_t *new_heap;
-int freeptr = NUM_REGISTERS;
-int free_;
-int scan;
-object_t root = NULL;
-object_t old;
+static object_t heap[HEAPSIZE] = {NULL};
+static int freeptr = 0;
+static object_t LAMBDA;
 
 void init_heap() {
-  the_heap = malloc(sizeof(*the_heap)*HEAPSIZE);
-  new_heap = malloc(sizeof(*new_heap)*HEAPSIZE);
-  int i;
-  for(i=0; i<HEAPSIZE; i++) {
-    the_heap[i] = NULL;
-    new_heap[i] = NULL;
-  }
+  LAMBDA = obj_new_symbol("_lambda");
 }
-
-/* garbage collection routine */
-object_t relocate_old_result_in_new(object_t old) {
-  object_t new = old; /* if it's not a cons, just return the data */
-  /* if it's a pair, perform the relocation */
-  if(iscons(old) && !isnull(old))
-    if(!isbrokenheart(car(old))) { /* pair */
-      new_heap[free_++] = car(old);
-      new_heap[free_++] = cdr(old);
-      new = malloc(sizeof(*new));
-      new_heap[free_++] = new;
-      new->type = Cons;
-      set_car(new, car(old));
-      set_cdr(new, cdr(old));
-
-      set_car(old, brokenheart);
-      set_cdr(old, new);
-
-    } else /* already-moved */
-      new = cdr(old);
-  return new;
-}
-
-void stop_and_copy() {
-  printf("running gc...");
-
-  /* free, scan point to the start of new memory */
-  free_ = NUM_REGISTERS;
-  scan = NUM_REGISTERS;
-
-  /* copy the registers into the special reserved portion of old memory */
-  int i;
-  the_heap[0] = malloc(sizeof(*the_heap[0]));
-  for(i = 0; i<NUM_REGISTERS; i++) {
-    the_heap[i]->type = Cons;
-    set_car(the_heap[i], reg[i]);
-    the_heap[i+1] = malloc(sizeof(*the_heap[i+1]));
-    set_cdr(the_heap[i], reg[i]);
-  }
-  the_heap[i]->type = Cons;
-  set_car(the_heap[i], reg[i]);
-  set_cdr(the_heap[i], NIL);
-
-  /* manually set up root at the beginning of new memory */
-  new_heap[free_] = malloc(sizeof(*new_heap[free_]));
-  new_heap[free_]->type = Cons;  
-  set_car(new_heap[free_], the_heap[0]);
-  set_cdr(new_heap[free_], NIL);
-  root = new_heap[free_];
-  free_ += 1;
-
-  /* scan now points to a pair which has been relocated into the new
-     memory, but the car, cdr of this pair have not been relocated
-     yet */
-  while(free_ != scan) { /* gc-loop */
-    /* relocate the car, cdr of the pair pointed to by scan, and
-       increment scan */
-    old = new_heap[scan];
-    set_car(old, relocate_old_result_in_new(car(old)));
-    set_cdr(old, relocate_old_result_in_new(cdr(old)));
-    scan++;
-  }
-
-  freeptr = free_;
-
-  /* gc-flip */
-
-  /* before flipping the memory -- copy the registers back out. */
-  int r;
-  for(r = 0; r<NUM_REGISTERS; r++)
-    reg[r] = cdr(the_heap[r]); /* cdr holds the fwding address */
-
-
-  /* flip the memory pointers */
-  object_t *tmp = new_heap;
-  new_heap = the_heap;
-  the_heap = tmp;
-
-  /* actually perform C free() calls on the garbage */
-  for(i = 0; i<HEAPSIZE; i++)
-    free(new_heap[i]);
-
-  printf("gc done.\n");
-}
-
-
-/* old storage allocation and object functions below */
 
 object_t obj_new() {
   if(freeptr < HEAPSIZE) {
-    the_heap[freeptr] = malloc(sizeof(*the_heap[freeptr]));
+    heap[freeptr] = malloc(sizeof(*heap[freeptr]));
     freeptr++;
-    return the_heap[freeptr-1];
-  } else
+    return heap[freeptr-1];
+  } else {
     printf("OUT OF MEMORY\n");
+  }
 }
 
 object_t obj_new_number(int n) {
@@ -333,5 +226,3 @@ object_t storage_append(object_t new, object_t old) {
   set_cdr(old, cons(new, NIL));
   return cdr(old);
 }
-
-

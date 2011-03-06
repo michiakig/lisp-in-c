@@ -3,17 +3,12 @@
 #include <stdlib.h>
 #include "runtime.h"
 #include "../interpreter/storage.h"
-#include "../interpreter/env.h"
+#include "env.h"
 #include "../interpreter/apply.h"
 #include "../interpreter/eval.h"
 
 int pc;
 int flag;
-object_t reg[7] = {0};
-object_t stack[STACKSIZE] = {0};
-object_t *sp = stack;
-
-extern object_t entry(void);
 
 object_t lookup_variable_value(object_t variable, object_t environment) {
   return lookup_variable(variable, environment);
@@ -52,14 +47,6 @@ object_t compiled_procedure_entry(object_t procedure) {
 
 object_t compiled_procedure_env(object_t procedure) {
   return car(cdr(cdr(procedure)));
-}
-
-void save(object_t x) {
-  *sp = x; sp++;
-}
-
-object_t restore() {
-  sp--; return *sp;
 }
 
 int obj2label(object_t obj) {

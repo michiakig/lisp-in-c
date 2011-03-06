@@ -1,11 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "apply.h"
-#include "storage.h"
-#include "obarray.h"
-#include "types.h"
-#include "registers.h"
+#include <string.h>
+
+#include "../interpreter/apply.h"
+#include "../interpreter/storage.h"
+#include "../interpreter/obarray.h"
+#include "../interpreter/types.h"
+#include "runtime.h"
 
 enum kind { Symbol, Cons, Procedure, String, Number };
 
@@ -31,34 +33,62 @@ object_t NIL = &empty;
 
 /* special global variable for broken heart */
 struct object_t brokenheartdata = { .type = Cons,
-                                    .data = { .car = NULL,
-                                              .cdr = NULL; } };
+                                    .data = { .consData = { .car = NULL,
+                                                            .cdr = NULL } } };
 object_t brokenheart = &brokenheartdata;
-int brokenheartp(object_t hrt) {
-  return hrt = brokenheart;
+int isbrokenheart(object_t hrt) {
+  return hrt == brokenheart;
 }
 
-#define HEAPSIZE 10000
-#define FIRST 8 /* the first free cell in the heap, after reservered portion */
+#define HEAPSIZE 100000
 
-object_t the_heap[HEAPSIZE] = {NULL};
-object_t new_heap[HEAPSIZE] = {NULL};
-int freeptr = FIRST;
-int free;
+#define STACKSIZE 100
+
+object_t reg[NUM_REGISTERS] = {0};
+object_t *stack;
+object_t *sp;
+
+object_t *the_heap;
+object_t *new_heap;
+int freeptr = NUM_REGISTERS;
+int free_;
 int scan;
 object_t root = NULL;
 object_t old;
+
+void save(object_t x) {
+  *sp = x; sp++;
+}
+
+object_t restore() {
+  sp--; return *sp;
+}
+
+void init_heap() {
+  the_heap = malloc(sizeof(*the_heap)*HEAPSIZE);
+  new_heap = malloc(sizeof(*new_heap)*HEAPSIZE);
+  int i;
+  for(i=0; i<HEAPSIZE; i++) {
+    the_heap[i] = NULL;
+    new_heap[i] = NULL;
+  }
+
+  stack = malloc(sizeof(*stack)*STACKSIZE);
+  for(i=0; i<STACKSIZE; i++)
+    stack[i] = NULL;
+  sp=stack;
+}
 
 /* garbage collection routine */
 object_t relocate_old_result_in_new(object_t old) {
   object_t new = old; /* if it's not a cons, just return the data */
   /* if it's a pair, perform the relocation */
   if(iscons(old) && !isnull(old))
-    if(!broken_heartp(car(old))) { /* pair */
-      new_heap[free++] = car(old);
-      new_heap[free++] = cdr(old);
+    if(!isbrokenheart(car(old))) { /* pair */
+      new_heap[free_++] = car(old);
+      new_heap[free_++] = cdr(old);
       new = malloc(sizeof(*new));
-      new_heap[free++] = new;
+      new_heap[free_++] = new;
       new->type = Cons;
       set_car(new, car(old));
       set_cdr(new, cdr(old));
@@ -75,8 +105,8 @@ void stop_and_copy() {
   printf("running gc...");
 
   /* free, scan point to the start of new memory */
-  free = FIRST;
-  scan = FIRST;
+  free_ = NUM_REGISTERS;
+  scan = NUM_REGISTERS;
 
   /* copy the registers into the special reserved portion of old memory */
   int i;
@@ -92,17 +122,17 @@ void stop_and_copy() {
   set_cdr(the_heap[i], NIL);
 
   /* manually set up root at the beginning of new memory */
-  new_heap[free] = malloc(sizeof(*new_heap[free]));
-  new_heap[free]->type = Cons;  
-  set_car(new_heap[free], the_heap[0]);
-  set_cdr(new_heap[free], NIL);
-  root = new_heap[free];
-  free += 1;
+  new_heap[free_] = malloc(sizeof(*new_heap[free_]));
+  new_heap[free_]->type = Cons;  
+  set_car(new_heap[free_], the_heap[0]);
+  set_cdr(new_heap[free_], NIL);
+  root = new_heap[free_];
+  free_ += 1;
 
   /* scan now points to a pair which has been relocated into the new
      memory, but the car, cdr of this pair have not been relocated
      yet */
-  while(free != scan) { /* gc-loop */
+  while(free_ != scan) { /* gc-loop */
     /* relocate the car, cdr of the pair pointed to by scan, and
        increment scan */
     old = new_heap[scan];
@@ -111,19 +141,19 @@ void stop_and_copy() {
     scan++;
   }
 
-  freeptr = free;
+  freeptr = free_;
 
   /* gc-flip */
 
   /* before flipping the memory -- copy the registers back out. */
   int r;
   for(r = 0; r<NUM_REGISTERS; r++)
-    reg[r] = cdr(the_heap[r]) /* cdr holds the fwding address */
+    reg[r] = cdr(the_heap[r]); /* cdr holds the fwding address */
 
 
   /* flip the memory pointers */
   object_t *tmp = new_heap;
-  new_heap = the_heap
+  new_heap = the_heap;
   the_heap = tmp;
 
   /* actually perform C free() calls on the garbage */
@@ -243,10 +273,12 @@ int isnull(object_t obj) {
 }
 
 object_t cons(object_t a, object_t d) {
+  save(a);
+  save(d);
   object_t new = obj_new();
   new->type = Cons;
-  new->data.consData.car = a;
-  new->data.consData.cdr = d;
+  new->data.consData.cdr = restore();
+  new->data.consData.car = restore();
   return new;
 }
 
