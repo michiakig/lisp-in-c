@@ -70,8 +70,3 @@ object_t label2obj(int label) {
   return obj_new_number(label);
 }
 
-int main(int argc, char **argv) {
-  printf("output:");
-  print_object(entry());
-  printf("\n");
-}
