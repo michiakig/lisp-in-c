@@ -12,7 +12,7 @@
 
 (define prelude
   "#include \"runtime.h\"
-#include \"../interpreter/storage.h\"
+#include \"storage.h\"
 #include \"../interpreter/apply.h\"
 ")
 
