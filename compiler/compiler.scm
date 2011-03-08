@@ -40,7 +40,7 @@
 (define (compile-and-emit exp filename)
   (pretty-print-c (lambda (s)
                     (file-append s filename))
-                  (lisp->c exp)))
+                  (lisp->c (_expand_ exp))))
 
 (define (lisp->c exp)
   (set! *labels* ())
