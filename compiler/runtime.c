@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "runtime.h"
-#include "../interpreter/storage.h"
+#include "storage.h"
 #include "env.h"
 #include "../interpreter/apply.h"
 #include "../interpreter/eval.h"

@@ -1,8 +1,9 @@
 #include "env.h"
 #include "../interpreter/types.h"
+#include "../interpreter/apply.h"
+#include "storage.h"
 int obj2label(object_t);
 object_t label2obj(int);
-#define STACKSIZE 100
 #define START 1
 #define END 0
 #define NUM_REGISTERS 10
