@@ -12,8 +12,6 @@
 
 (define prelude
   "#include \"runtime.h\"
-#include \"storage.h\"
-#include \"../interpreter/apply.h\"
 ")
 
 (define entry-pre
