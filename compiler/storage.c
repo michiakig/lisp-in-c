@@ -9,10 +9,17 @@
 #include "../interpreter/types.h"
 #include "runtime.h"
 
+struct free_list_node {
+  struct free_list_node *next;
+  int index;
+  int count;
+};
+
 enum kind { Symbol, Cons, Procedure, String, Number };
 
 struct object_t {
   enum kind type;
+  int marked;
   union {
     struct {
       object_t car;
@@ -40,21 +47,18 @@ int isbrokenheart(object_t hrt) {
   return hrt == brokenheart;
 }
 
-#define HEAPSIZE 100000
+#define HEAPSIZE 200
 
-#define STACKSIZE 100
+#define STACKSIZE 50
 
-object_t reg[NUM_REGISTERS] = {0};
+object_t reg[NUM_REGISTERS] = {NULL};
 object_t *stack;
 object_t *sp;
 
-object_t *the_heap;
-object_t *new_heap;
-int freeptr = NUM_REGISTERS;
-int free_;
-int scan;
-object_t root = NULL;
-object_t old;
+object_t *heap;
+int freeptr = 0;
+
+struct free_list_node *free_list;
 
 void save(object_t x) {
   *sp = x; sp++;
@@ -65,13 +69,15 @@ object_t restore() {
 }
 
 void init_heap() {
-  the_heap = malloc(sizeof(*the_heap)*HEAPSIZE);
-  new_heap = malloc(sizeof(*new_heap)*HEAPSIZE);
+  heap = malloc(sizeof(*heap)*HEAPSIZE);
   int i;
-  for(i=0; i<HEAPSIZE; i++) {
-    the_heap[i] = NULL;
-    new_heap[i] = NULL;
-  }
+  for(i=0; i<HEAPSIZE; i++)
+    heap[i] = NULL;
+
+  free_list = malloc(sizeof(*free_list));
+  free_list->next = NULL;
+  free_list->index = 0;
+  free_list->count = HEAPSIZE;
 
   stack = malloc(sizeof(*stack)*STACKSIZE);
   for(i=0; i<STACKSIZE; i++)
@@ -79,106 +85,119 @@ void init_heap() {
   sp=stack;
 }
 
-/* garbage collection routine */
-object_t relocate_old_result_in_new(object_t old) {
-  object_t new = old; /* if it's not a cons, just return the data */
-  /* if it's a pair, perform the relocation */
-  if(iscons(old) && !isnull(old))
-    if(!isbrokenheart(car(old))) { /* pair */
-      new_heap[free_++] = car(old);
-      new_heap[free_++] = cdr(old);
-      new = malloc(sizeof(*new));
-      new_heap[free_++] = new;
-      new->type = Cons;
-      set_car(new, car(old));
-      set_cdr(new, cdr(old));
 
-      set_car(old, brokenheart);
-      set_cdr(old, new);
-
-    } else /* already-moved */
-      new = cdr(old);
-  return new;
+int ismarked(object_t o) {
+  return o->marked;
 }
 
-void stop_and_copy() {
-  printf("running gc...");
+void setcleared(object_t o) {
+  o->marked=0;
+}
 
-  /* free, scan point to the start of new memory */
-  free_ = NUM_REGISTERS;
-  scan = NUM_REGISTERS;
+void setmarked(object_t o) {
+  o->marked=1;
+}
 
-  /* copy the registers into the special reserved portion of old memory */
+void mark_starting_at(object_t root) {
+  if(iscons(root) && !isnull(root)) {
+    setmarked(root);
+    if(!isnull(car(root)) &&
+       car(root) != NULL &&
+       !ismarked(car(root)))
+       mark_starting_at(car(root));
+    if(!isnull(cdr(root)) && cdr(root) != NULL && !ismarked(cdr(root)))
+       mark_starting_at(cdr(root));
+  } else
+    setmarked(root);
+}
+
+void mark_and_sweep() {
   int i;
-  the_heap[0] = malloc(sizeof(*the_heap[0]));
-  for(i = 0; i<NUM_REGISTERS; i++) {
-    the_heap[i]->type = Cons;
-    set_car(the_heap[i], reg[i]);
-    the_heap[i+1] = malloc(sizeof(*the_heap[i+1]));
-    set_cdr(the_heap[i], reg[i]);
+  for(i=0; i<NUM_REGISTERS; i++) {
+    if(reg[i] != NULL)
+      mark_starting_at(reg[i]);
   }
-  the_heap[i]->type = Cons;
-  set_car(the_heap[i], reg[i]);
-  set_cdr(the_heap[i], NIL);
-
-  /* manually set up root at the beginning of new memory */
-  new_heap[free_] = malloc(sizeof(*new_heap[free_]));
-  new_heap[free_]->type = Cons;  
-  set_car(new_heap[free_], the_heap[0]);
-  set_cdr(new_heap[free_], NIL);
-  root = new_heap[free_];
-  free_ += 1;
-
-  /* scan now points to a pair which has been relocated into the new
-     memory, but the car, cdr of this pair have not been relocated
-     yet */
-  while(free_ != scan) { /* gc-loop */
-    /* relocate the car, cdr of the pair pointed to by scan, and
-       increment scan */
-    old = new_heap[scan];
-    set_car(old, relocate_old_result_in_new(car(old)));
-    set_cdr(old, relocate_old_result_in_new(cdr(old)));
-    scan++;
+  for(i=0; i<STACKSIZE && stack[i]!=NULL; i++) {
+    if(stack[i] != NULL)
+      mark_starting_at(stack[i]);
   }
 
-  freeptr = free_;
+  for(i=0; i<HEAPSIZE; i++) {
+    if(heap[i]==NULL)
+      printf(".");
+    else if(ismarked(heap[i]))
+      printf("x");
+    else
+      printf("_");
+  }
+  printf("\n");
 
-  /* gc-flip */
+  /* free list is null at this point */
+  free_list = malloc(sizeof(*free_list));
+  free_list->index = -1;
 
-  /* before flipping the memory -- copy the registers back out. */
-  int r;
-  for(r = 0; r<NUM_REGISTERS; r++)
-    reg[r] = cdr(the_heap[r]); /* cdr holds the fwding address */
-
-
-  /* flip the memory pointers */
-  object_t *tmp = new_heap;
-  new_heap = the_heap;
-  the_heap = tmp;
-
-  /* actually perform C free() calls on the garbage */
-  for(i = 0; i<HEAPSIZE; i++)
-    free(new_heap[i]);
-
-  printf("gc done.\n");
+  for(i=0; i<HEAPSIZE; i++) {
+    if(heap[i]!=NULL && !ismarked(heap[i])) {
+      /*      printf("freeing %d ", i); print_object(heap[i]);
+              printf("\n"); */
+      free(heap[i]);
+      heap[i]=NULL;
+      if(free_list->index < 0) {
+        free_list->index = i;
+        free_list->count = 1;
+      } else
+        free_list->count++;
+    } else {
+      if(heap[i]!=NULL)
+        setcleared(heap[i]);
+      if(free_list->index > 0) {
+        struct free_list_node *f = malloc(sizeof(*f));
+        f->next = free_list;
+        f->index = -1;
+        f->count = 0;
+        free_list = f;
+      }
+    }
+  }/*
+  struct free_list_node *n;
+  for(n = free_list; n; n=n->next)
+    printf("%d,%d ", n->index, n->count);
+    printf("\n");*/
 }
-
-
-/* old storage allocation and object functions below */
 
 object_t obj_new() {
-  if(freeptr < HEAPSIZE) {
-    the_heap[freeptr] = malloc(sizeof(*the_heap[freeptr]));
-    freeptr++;
-    return the_heap[freeptr-1];
-  } else
-    printf("OUT OF MEMORY\n");
+  struct free_list_node *n;
+  /*
+  for(n = free_list; n; n=n->next)
+    printf("%d,%d ", n->index, n->count);
+  printf("\n");
+  */
+  while(free_list != NULL && free_list->count == 0) {
+    struct free_list_node *f = free_list->next;
+    free(free_list);
+    free_list = f;
+  }
+  if(free_list == NULL) {
+    /*    printf("running gc..."); */
+    mark_and_sweep();
+    /*    printf("gc done.\n"); */
+    return obj_new();
+  }
+  /*  printf("allocing %d ", free_list->index); */
+  heap[free_list->index] = malloc(sizeof(*heap[free_list->index]));
+  object_t ret = heap[free_list->index];
+  free_list->index++;
+  free_list->count--;
+  return ret;
 }
+
+/* old storage allocation and object functions below */
 
 object_t obj_new_number(int n) {
   object_t new = obj_new();
   new->type = Number;
   new->data.numberData = n;
+  /*  print_object(new); printf("\n"); */
   return new;
 }
 
@@ -209,6 +228,7 @@ object_t obj_new_symbol(char *s) {
   object_t new = obj_new();
   new->type = Symbol;
   new->data.symbolData = symbol;
+  /*  print_object(new); printf("\n"); */
   return new;
 }
 
@@ -236,6 +256,7 @@ object_t obj_new_string(char *string) {
   object_t obj = obj_new();
   obj->type = String;
   obj->data.stringData = copy;
+  /*  print_object(obj); printf("\n"); */
   return obj;
 }
 
@@ -279,6 +300,7 @@ object_t cons(object_t a, object_t d) {
   new->type = Cons;
   new->data.consData.cdr = restore();
   new->data.consData.car = restore();
+
   return new;
 }
 
