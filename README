@@ -1,8 +1,10 @@
-A rudimentary Lisp interpreter and compiler, inspired by Structure and Interpretation of Computer Programs, exercises 5.51 and 5.52
+A rudimentary Lisp interpreter and compiler, inspired by Structure and
+Interpretation of Computer Programs, exercises 5.51 and 5.52
 
 http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-35.html#%_thm_5.51
 
 Exercise 5.51.
+
 "Develop a rudimentary implementation of Scheme in C (or some other
 low-level language of your choice) by translating the explicit-control
 evaluator of section 5.4 into C. In order to run this code you will
@@ -14,22 +16,29 @@ explicit control evaluator is written in, so I basically translated
 the meta-circular evaluator to C instead.
 
 Exercise 5.52.
+
 "As a counterpoint to exercise 5.51, modify the compiler so that it
 compiles Scheme procedures into sequences of C instructions. Compile
 the metacircular evaluator of section 4.1 to produce a Scheme
 interpreter written in C."
 
-The compiler here is basically a translator which takes as input
+The compiler here is a translator which takes as input
 register machine code and emits C.
 
 features/bugs:
 
-The repl doesn't handle two s-expression on a one line, ignores the second one.
-Primitives don't check for arity, so (quote foo bar) is just foo, and not an error.
-No tail-call optimization
-No garbage collection
-No user-defined macros, altho a macro system is in place for "system" macros
-Not much error checking
+The interpreter's REPL can't handle two s-expression on a one line, it
+ignores the second one.  Primitives don't check for arity, so (quote
+foo bar) is just foo, and not an error.  The interpreter has no
+tail-call optimizationm and no garbage collection.  There are no
+user-defined macros, although a macro system is in place for "system"
+macros and user-defined ones would be easy to add.  There is very,
+very little error checking.
+
+The compiler includes tail-call optimization (well, since the one from
+SICP does) and a naive mark-and-sweep garbage collector. It should be
+possible to compile the metacircular evaluator from chapter 4 and
+produce a faster interpreter.
 
 see also:
 
