@@ -11,20 +11,15 @@
                  entry-post)))
 
 (define prelude
-  "#include \"runtime.h\"
-")
+  "#include \quoteruntime.h\quote\newline")
 
 (define entry-pre
-  "object_t entry(void) {
-pc=START;
-reg[continue]=label2obj(END);
-reg[env]=init_global();
-")
+  "object_t entry(void) {\newlinepc=START;\newlinereg[continue]=label2obj(END);\newline\newlinereg[env]=init_global();\newline")
 
-(define entry-post "return reg[val]; \n}\n")
+(define entry-post "return reg[val]; \newline}\newline")
 
 (define while-switch-pre
-  "while(pc) {\njump: switch(pc) {\ncase START:\n")
+  "while(pc) {\newlinejump: switch(pc) {\newlinecase START:\newline")
 
-(define while-switch-post "}\n}\n")
+(define while-switch-post "}\newline}\newline")
 
