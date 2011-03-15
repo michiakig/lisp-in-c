@@ -15,8 +15,8 @@ object_t lookup_variable_value(object_t variable, object_t environment) {
 }
 
 int primitive_procedurep(object_t procedure) {
-  return isproc(procedure); // non-primitive procedures are compiled
-                            // and are Conses
+  return isproc(procedure); /* non-primitive procedures are compiled
+                            and are Conses */
 }
 
 object_t apply_primitive_procedure(object_t procedure, object_t arglist) {
@@ -31,9 +31,9 @@ object_t list(object_t obj) {
   return cons(obj, NIL);
 }
 
-// See footnote 38 in chapter 5:
-// machine operations to implement a data structure for representing
-// compiled procedures
+/* See footnote 38 in chapter 5:
+ machine operations to implement a data structure for representing
+ compiled procedures */
 
 object_t make_compiled_procedure(object_t entry, object_t environment) {
   return cons(obj_new_symbol("compiled-procedure"),
