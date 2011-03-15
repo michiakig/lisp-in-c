@@ -1,3 +1,5 @@
+"What I cannot create, I do not understand." -- Richard Feynman
+
 A rudimentary Lisp interpreter and compiler, inspired by Structure and
 Interpretation of Computer Programs, exercises 5.51 and 5.52
 
@@ -36,9 +38,18 @@ macros and user-defined ones would be easy to add.  There is very,
 very little error checking.
 
 The compiler includes tail-call optimization (well, since the one from
-SICP does) and a naive mark-and-sweep garbage collector. It should be
-possible to compile the metacircular evaluator from chapter 4 and
-produce a faster interpreter.
+SICP does) and a naive mark-and-sweep garbage collector.
+
+By mid-March 2010 it kind of sort of works. The interpreter can run
+the compiler which can compile the tests in the tests dir, and the gc
+seems to be working. For now, I am putting it to rest while I dig into
+Lisp in Small Pieces.
+
+Since this relies on SICP, which is graciously available under a
+Creative Commons license, this project is available under the same
+license.
+
+http://creativecommons.org/licenses/by-nc/3.0/
 
 see also:
 
