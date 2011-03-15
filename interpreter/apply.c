@@ -41,7 +41,7 @@ object_t init_global() {
     obj_new_symbol("eval"),      obj_new_primitive(&primitive_eval),
     obj_new_symbol("apply"),     obj_new_primitive(&primitive_apply),
 
-    /*    obj_new_symbol("read"),      obj_new_primitive(&primitive_read),*/
+        obj_new_symbol("read"),      obj_new_primitive(&primitive_read),
     obj_new_symbol("read-file"), obj_new_primitive(&primitive_read_file),
     obj_new_symbol("quit"),      obj_new_primitive(&primitive_quit),
     obj_new_symbol("error"),     obj_new_primitive(&primitive_error),
@@ -61,7 +61,7 @@ object_t init_global() {
   };
 
   int i;
-  for(i = 0; i < 68; i+=2)
+  for(i = 0; i < 70; i+=2)
     env = define_variable(primitives[i], primitives[i+1], env);
 
   return env;

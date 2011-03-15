@@ -33,8 +33,15 @@
 (define false '#f)
 (define true '#t)
 
+(define (boolean? x)
+  (if (eq? x false)
+      #t
+      (if (eq? x true)
+          #t
+          #f)))
+
 (define (display x) (print x))
-(define (newline) (print "\n"))
+(define (newline) (print "\newline"))
 
 (define (list . rest) rest)
 

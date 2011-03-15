@@ -12,7 +12,7 @@
 #include "lib/list.h"
 #include "lib/str_utils.h"
 
-#define MAX_LINE 100
+#define MAX_LINE 200
 
 object_t wrap(char **in, object_t current, char *type);
 object_t parse_sexp2(char **in, object_t current);

@@ -29,7 +29,7 @@ struct object_t empty = { .type = Cons,
                                                 .cdr = NULL } } };
 object_t NIL = &empty;
 
-#define HEAPSIZE 1000000 /* this is managed memory */
+#define HEAPSIZE 10000000 /* this is managed memory */
 
 static object_t heap[HEAPSIZE] = {NULL};
 static int freeptr = 0;
@@ -86,27 +86,30 @@ object_t obj_new_symbol(char *s) {
   return new;
 }
 
-object_t obj_new_string(char *string) {
-  char *copy = malloc(sizeof(*copy) * (strlen(string)+1));
-  char *s, *c;
-  for(c = copy, s = string; *s != '\0'; s++, c++)
+char *unescape(char *s) {
+  char *copy = malloc(sizeof(*copy) * (strlen(s)+1));
+  char *c;
+  for(c = copy; *s != '\0'; c++)
     if(*s == '\\') {
-      switch(*(s+1)) {
-      case 'n':
-        *c = '\n';
-        break;
-      case 't':
-        *c = '\t';
-        break;
-      default:
-        *c = *(s+1);
-        break;
-      }
       s++;
-    } else
+      if(0==strncmp(s, "newline", 7)) {
+        *c = '\n';
+        s = s+7;
+      } else if(0==strncmp(s, "quote", 5)) {
+        *c = '"';
+        s = s+5;
+      } else
+        *c = '\\';
+    } else {
       *c = *s;
-
+      s++;
+    }
   *c = '\0';
+  return copy;
+}
+
+object_t obj_new_string(char *string) {
+  char *copy = unescape(string);
   object_t obj = obj_new();
   obj->type = String;
   obj->data.stringData = copy;
