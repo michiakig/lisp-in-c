@@ -18,6 +18,10 @@
 
 
 (define (compile exp target linkage)
+  (print "compiling ")
+  (print exp)
+  (print " ...\newline")
+  
   (cond ((self-evaluating? exp)
          (compile-self-evaluating exp target linkage))
         ((quoted? exp) (compile-quoted exp target linkage))
@@ -95,7 +99,7 @@
      (preserving '(env)
       get-value-code
       (make-instruction-sequence '(env val) (list target)
-       `((perform (op set_variable_value)
+       `((perform (op set_variable)
                   (const ,var)
                   (reg val)
                   (reg env))
