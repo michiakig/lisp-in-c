@@ -1,6 +1,7 @@
 #include "env.h"
 #include "../interpreter/types.h"
 #include "../interpreter/apply.h"
+#include "../interpreter/primitives.h"
 #include "storage.h"
 int obj2label(object_t);
 object_t label2obj(int);
