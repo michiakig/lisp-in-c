@@ -34,7 +34,7 @@
                (symbol->string (car label))
                " "
                (number->string (cdr label))
-               "\n"))
+               "\newline"))
        labels))
 
 (define (compile-and-emit exp filename)
@@ -46,9 +46,6 @@
   (set! *labels* ())
   (set! *labels-count* 1)
   (let ((compiled (compile exp 'val 'return)))
-    
-    (pretty-print-reg (caddr compiled))
-    
     (surround-with-boilerplate 
      (map (lambda (inst)
             (apply string-append-n inst))
@@ -84,45 +81,45 @@
   (append
    (list "flag=")
    (opcall->c (opcall-op inst) (opcall-args inst))
-   (list ";\n")))
+   (list ";\newline")))
 
 ;; (branch (label foo)) --> if(flag){GOTO(label(foo));}
 (define (branch->c inst)
-  (list "if(flag){GOTO(" (label-exp-name (branch-target inst)) ");}\n"))
+  (list "if(flag){GOTO(" (label-exp-name (branch-target inst)) ");}\newline"))
 
 (define (save->c inst)
-  (list "save(" (reg->c (save-arg inst)) ");\n"))
+  (list "save(" (reg->c (save-arg inst)) ");\newline"))
 
 (define (restore->c inst)
-  (list (reg->c (restore-target inst)) "=restore();\n"))
+  (list (reg->c (restore-target inst)) "=restore();\newline"))
 
 (define (perform->c inst)
   (append
    (opcall->c (perform-op inst) (perform-args inst))
-   (list ";\n")))
+   (list ";\newline")))
 
 (define (goto->c inst)
   (cond ((reg? (goto-target inst))
-         (list "GOTO(obj2label(" (inst->c (goto-target inst)) "));\n"))
+         (list "GOTO(obj2label(" (inst->c (goto-target inst)) "));\newline"))
         ((label-exp? (goto-target inst))
-         (list "GOTO(" (label-exp-name (goto-target inst)) ");\n"))
+         (list "GOTO(" (label-exp-name (goto-target inst)) ");\newline"))
         (else (error "ERROR! bad goto target: " (goto-target inst)))))
 
 (define (label->c inst)
   (if (label-stmt? inst)
       (begin
         (set! *labels* (cons (make-label-define inst) *labels*))
-        (list "case " inst ":;\n"))
+        (list "case " inst ":;\newline"))
       (list "label2obj(" (label-exp-name inst) ")")))
 
 (define (assign->c inst)
   (if (op-call? (car (assign-rest inst)))
       (append (list (reg->c (assign-target inst)) "=")
               (opcall->c (car (assign-rest inst)) (cdr (assign-rest inst)))
-              (list ";\n"))
+              (list ";\newline"))
       (append (list (reg->c (assign-target inst)) "=")
               (inst->c (car (assign-rest inst)))
-              (list ";\n"))))
+              (list ";\newline"))))
 
 (define (opcall->c op args)
   (append (list (op-name op) "(")
@@ -134,8 +131,8 @@
 (define (const->c const)
   (let ((val (cadr const)))
     (cond ((number? val) (list "obj_new_number(" val ")"))
-          ((symbol? val) (list "obj_new_symbol(\"" val "\")"))
-          ((string? val) (list "obj_new_string(\"" val "\")"))
+          ((symbol? val) (list "obj_new_symbol(\quote" val "\quote)"))
+          ((string? val) (list "obj_new_string(\quote" val "\quote)"))
           ((null? val) (list "NIL"))
           ((cons? val)
            (list->cons-calls val)))))
@@ -143,7 +140,7 @@
 ; (a b c) --> "cons(a, cons(b, cons(c, NIL)))"
 (define (list->cons-calls lst)
   (if (null? (cdr lst))
-      (list "cons(obj_new_symbol(\"" (car lst) "\"),NIL)")
-      (append (list "cons(obj_new_symbol(\"" (car lst) "\"),")
+      (list "cons(obj_new_symbol(\quote" (car lst) "\quote),NIL)")
+      (append (list "cons(obj_new_symbol(\quote" (car lst) "\quote),")
               (list->cons-calls (cdr lst))
               (list ")"))))
