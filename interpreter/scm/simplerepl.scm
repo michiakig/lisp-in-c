@@ -6,6 +6,6 @@
       (quit)
       (begin
         (print (eval _exp_))
-        (print "\n")
+        (print "\newline")
         (_repl_))))
 (_repl_)

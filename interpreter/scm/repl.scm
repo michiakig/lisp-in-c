@@ -1,7 +1,6 @@
-(load "/Users/aki/lisp-in-c/interpreter/scm/lib.scm")
-(load "/Users/aki/lisp-in-c/interpreter/scm/macros.scm")
-
-(load-with-macros "/Users/aki/lisp-in-c/interpreter/scm/extlib.scm" )
+(load "scm/lib.scm")
+(load "scm/macros.scm")
+(load-with-macros "scm/extlib.scm" )
 
 (define (_repl_)
   (define _exp_ ())

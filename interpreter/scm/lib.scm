@@ -146,6 +146,3 @@
                   (flatten (cdr lst)))
           (cons (car lst)
                 (flatten (cdr lst))))))
-
-
-
