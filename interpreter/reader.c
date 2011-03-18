@@ -20,9 +20,6 @@ enum kind next_token(char **, char **);
 char *get_symbol(char **);
 char *get_string(char **);
 
-/* delimeters for symbols */
-static char *punct = " ()'`,\"";
-
 /* the different kinds of tokens in our subset of Scheme/Lisp, note
    that in this case "Symbol" is actually both Lisp symbols and numbers */
 
@@ -106,6 +103,7 @@ object_t parse_sexp2(char **in, object_t current) {
       return parse_sexp2(in, current);
     }
   }
+  return NULL;
 }
 
 object_t wrap(char **in, object_t current, char *type) {
@@ -132,7 +130,7 @@ char *get_string(char **ch) {
   char *brk = strpbrk(*ch, "\"");
   while(*(brk-1) == '\\')
     brk = strpbrk(brk+1, "\"");
-  int len = brk - *ch;
+
   *brk = '\0';
   char *string = strdup(*ch);
   *brk = '"';
@@ -227,8 +225,6 @@ char *read_sexp(FILE *in) {
   struct list_t *head = NULL;
   int parens = 0;
   int quote = 0;
-  size_t chars = 0;
-
 
   char *buf = malloc(sizeof(*buf) * MAX_LINE);
   if(buf == NULL)

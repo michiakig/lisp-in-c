@@ -23,5 +23,7 @@ int main(int argc, char **argv) {
     for(i = 1; i<argc; i++)
       load_file(argv[i], &global_env);
   }
+
+  return 0;
 }
 

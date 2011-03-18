@@ -46,6 +46,7 @@ object_t obj_new() {
     return heap[freeptr-1];
   } else {
     printf("OUT OF MEMORY\n");
+    return NULL;
   }
 }
 
