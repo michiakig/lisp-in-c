@@ -1,7 +1,7 @@
 "What I cannot create, I do not understand." -- Richard Feynman
 
-A rudimentary Lisp interpreter and compiler, inspired by Structure and
-Interpretation of Computer Programs, exercises 5.51 and 5.52
+A rudimentary Lisp interpreter and compiler, inspired by the last two
+exercises of Structure and Interpretation of Computer Programs.
 
 http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-35.html#%_thm_5.51
 
@@ -13,10 +13,6 @@ evaluator of section 5.4 into C. In order to run this code you will
 need to also provide appropriate storage-allocation routines and other
 run-time support."
 
-C is a bit higher-level than the register machine language that the
-explicit control evaluator is written in, so I basically translated
-the meta-circular evaluator to C instead.
-
 Exercise 5.52.
 
 "As a counterpoint to exercise 5.51, modify the compiler so that it
@@ -24,43 +20,49 @@ compiles Scheme procedures into sequences of C instructions. Compile
 the metacircular evaluator of section 4.1 to produce a Scheme
 interpreter written in C."
 
-The compiler here is a translator which takes as input
-register machine code and emits C.
+Build
 
-features/bugs:
+Run make in the interpreter's directory. Start the interpreter's REPL with
 
-The interpreter's REPL can't handle two s-expression on a one line, it
-ignores the second one.  Primitives don't check for arity, so (quote
-foo bar) is just foo, and not an error.  The interpreter has no
-tail-call optimizationm and no garbage collection.  There are no
-user-defined macros, although a macro system is in place for "system"
-macros and user-defined ones would be easy to add.  There is very,
-very little error checking.
+$ lispinc ./scm/repl.scm
 
-The compiler includes tail-call optimization (well, since the one from
-SICP does) and a naive mark-and-sweep garbage collector.
+or, with no derived forms (let, cond, and, or, etc)
 
-By mid-March 2010 it kind of sort of works. The interpreter can run
-the compiler which can compile the tests in the tests dir, and the gc
-seems to be working. For now, I am putting it to rest while I dig into
-Lisp in Small Pieces.
+$ lispinc ./scm/simplerepl.scm
 
-Since this relies on SICP, which is graciously available under a
-Creative Commons license, this project is available under the same
-license.
+Features/bugs
+
+The interpreter's reader can't handle two s-expression in one line; it
+will ignore the second one. Primitives don't check for arity. The
+interpreter has no tail-call optimizationm and no garbage
+collection. There are no user-defined macros, although a macro system
+is in place for some syntactic sugar used in the compiler (let, cond,
+etc) and user-defined macros would be relatively straightforward to
+add. There is very, very little error checking. There are many, many
+memory leaks.
+
+The compiler is really just a translator from the register machine
+language to C. It includes tail-call optimization (well the one from
+SICP does) and a naive mark-and-sweep garbage collector, which appears
+to work.
+
+License
+
+Since this builds and relies upon SICP, which is graciously available
+under a Creative Commons license, this code is under the same license.
 
 http://creativecommons.org/licenses/by-nc/3.0/
 
-see also:
+See also:
 
-An Incremental Approach to Compiler Construction
-http://scheme2006.cs.uchicago.edu/11-ghuloum.pdf
-
-90 Minute Scheme to C Compiler
-http://www.iro.umontreal.ca/~boucherd/mslug/meetings/20041020/minutes-en.html
+Scheme from Scratch (closest to this project)
+http://michaux.ca/articles/scheme-from-scratch-introduction
 
 A tiny self-hosting Lisp-to-C compiler
 https://github.com/darius/ichbins
 
-Scheme from Scratch
-http://michaux.ca/articles/scheme-from-scratch-introduction
+90 Minute Scheme to C Compiler
+http://www.iro.umontreal.ca/~boucherd/mslug/meetings/20041020/minutes-en.html
+
+An Incremental Approach to Compiler Construction
+http://scheme2006.cs.uchicago.edu/11-ghuloum.pdf
